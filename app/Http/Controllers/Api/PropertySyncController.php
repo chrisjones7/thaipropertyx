@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Property;
+use App\Models\PropertyMedia;
 use App\Models\PropertySource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,8 +34,6 @@ class PropertySyncController extends Controller
         $validated = $request->validate([
             /*
              * Houzez / WordPress identity.
-             *
-             * This should normally be the WordPress property post ID.
              */
             'external_id' => ['required', 'string', 'max:255'],
             'external_url' => ['nullable', 'url', 'max:2048'],
@@ -55,11 +54,7 @@ class PropertySyncController extends Controller
 
             'sale_price' => ['nullable', 'numeric', 'min:0'],
             'rental_price' => ['nullable', 'numeric', 'min:0'],
-            'rental_period' => [
-                'nullable',
-                'string',
-                'max:50',
-            ],
+            'rental_period' => ['nullable', 'string', 'max:50'],
 
             'currency' => ['nullable', 'string', 'size:3'],
 
@@ -102,17 +97,8 @@ class PropertySyncController extends Controller
             'postcode' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:100'],
 
-            'latitude' => [
-                'nullable',
-                'numeric',
-                'between:-90,90',
-            ],
-
-            'longitude' => [
-                'nullable',
-                'numeric',
-                'between:-180,180',
-            ],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
 
             /*
              * TPX publication state.
@@ -125,11 +111,23 @@ class PropertySyncController extends Controller
             'featured' => ['nullable', 'boolean'],
 
             /*
-             * This is the important Houzez checkbox:
-             *
-             * Make available to TPX Network
+             * Make available to TPX Network.
              */
             'exchange_available' => ['required', 'boolean'],
+
+            /*
+             * Property media supplied by the owner's Houzez website.
+             *
+             * When the images field is supplied, TPX treats it as the
+             * authoritative gallery for this property.
+             */
+            'images' => ['sometimes', 'array', 'max:100'],
+            'images.*.url' => ['required', 'url', 'max:2048'],
+            'images.*.thumbnail_url' => ['nullable', 'url', 'max:2048'],
+            'images.*.title' => ['nullable', 'string', 'max:255'],
+            'images.*.alt_text' => ['nullable', 'string', 'max:255'],
+            'images.*.sort_order' => ['nullable', 'integer', 'min:0'],
+            'images.*.is_primary' => ['nullable', 'boolean'],
         ]);
 
         /*
@@ -180,12 +178,6 @@ class PropertySyncController extends Controller
         ) {
             /*
              * Find the existing TPX property through its Houzez source.
-             *
-             * The combination:
-             *
-             * agency_id + source_type + external_id
-             *
-             * identifies the owner's original WordPress property.
              */
             $source = PropertySource::query()
                 ->where('agency_id', $agency->id)
@@ -206,11 +198,7 @@ class PropertySyncController extends Controller
             }
 
             /*
-             * Important security check.
-             *
-             * Even if corrupted source data somehow pointed at another
-             * agency's property, this API client must never be allowed
-             * to overwrite it.
+             * Prevent one agency from overwriting another agency's property.
              */
             if (
                 !$isNewProperty &&
@@ -226,12 +214,7 @@ class PropertySyncController extends Controller
                 (bool) $validated['exchange_available'];
 
             /*
-             * Keep the legacy listing_type / price columns populated while
-             * TPX still retains those columns.
-             *
-             * For properties offered for both sale and rent, sale is used
-             * as the legacy primary type. The modern for_sale / for_rent
-             * fields remain authoritative.
+             * Keep legacy listing_type / price populated.
              */
             $legacyListingType =
                 $validated['for_sale']
@@ -399,8 +382,7 @@ class PropertySyncController extends Controller
             ]);
 
             /*
-             * If the remote listing is active, preserve/set its publication
-             * time. Non-active listings do not receive a new publication date.
+             * Preserve/set publication time for active properties.
              */
             if (
                 $property->status === 'active' &&
@@ -412,7 +394,7 @@ class PropertySyncController extends Controller
             $property->save();
 
             /*
-             * Create/update the permanent Houzez → TPX source relationship.
+             * Create/update the permanent Houzez -> TPX source relationship.
              */
             PropertySource::updateOrCreate(
                 [
@@ -430,11 +412,74 @@ class PropertySyncController extends Controller
             );
 
             /*
+             * Synchronize the owner's Houzez image gallery.
+             *
+             * Important:
+             * If "images" is omitted completely, the existing TPX gallery
+             * is left unchanged.
+             *
+             * If "images" is supplied as an empty array, the existing
+             * image gallery is removed.
+             */
+            if (array_key_exists('images', $validated)) {
+                $property->media()
+                    ->where('media_type', 'image')
+                    ->delete();
+
+                $primaryAssigned = false;
+
+                foreach ($validated['images'] as $index => $image) {
+                    $requestedPrimary =
+                        (bool) ($image['is_primary'] ?? false);
+
+                    $isPrimary = false;
+
+                    if ($requestedPrimary && !$primaryAssigned) {
+                        $isPrimary = true;
+                        $primaryAssigned = true;
+                    }
+
+                    PropertyMedia::create([
+                        'property_id' => $property->id,
+                        'media_type' => 'image',
+                        'url' => $image['url'],
+                        'thumbnail_url' =>
+                            $image['thumbnail_url'] ?? null,
+                        'title' =>
+                            $image['title'] ?? null,
+                        'alt_text' =>
+                            $image['alt_text'] ?? null,
+                        'sort_order' =>
+                            $image['sort_order'] ?? $index,
+                        'is_primary' =>
+                            $isPrimary,
+                    ]);
+                }
+
+                /*
+                 * If the connector supplied images but did not explicitly
+                 * mark a primary image, make the first image primary.
+                 */
+                if (
+                    count($validated['images']) > 0 &&
+                    !$primaryAssigned
+                ) {
+                    $firstImage = $property->media()
+                        ->where('media_type', 'image')
+                        ->orderBy('sort_order')
+                        ->orderBy('id')
+                        ->first();
+
+                    if ($firstImage) {
+                        $firstImage->is_primary = true;
+                        $firstImage->save();
+                    }
+                }
+            }
+
+            /*
              * If the owner removes the property from the TPX Network,
              * centrally revoke every non-revoked syndication.
-             *
-             * Later, webhooks / connector sync will tell the receiving
-             * Houzez websites to unpublish their local syndicated copies.
              */
             if (
                 $wasExchangeAvailable &&
@@ -449,7 +494,9 @@ class PropertySyncController extends Controller
             }
 
             return [
-                'property' => $property->fresh(),
+                'property' => $property->fresh([
+                    'images',
+                ]),
                 'created' => $isNewProperty,
             ];
         });
@@ -485,6 +532,8 @@ class PropertySyncController extends Controller
 
                 'exchange_available_at' =>
                     $property->exchange_available_at,
+
+                'images' => $property->images,
 
                 'last_synced_at' => now(),
             ],

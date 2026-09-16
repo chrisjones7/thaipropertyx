@@ -217,15 +217,49 @@ class PropertySyncController extends Controller
                 abort(403, 'This API client does not own this property.');
             }
 
-            $wasExchangeAvailable =
-                (bool) ($property->exchange_available ?? false);
+           $wasExchangeAvailable =
+    (bool) ($property->exchange_available ?? false);
 
-            $isExchangeAvailable =
-                (bool) $validated['exchange_available'];
+$isExchangeAvailable =
+    (bool) $validated['exchange_available'];
 
-            /*
-             * Keep legacy listing_type / price populated.
-             */
+/*
+ * Normalize the source Houzez property type into the
+ * canonical TPX property type.
+ *
+ * Agency-specific mappings take priority over global mappings.
+ */
+$sourcePropertyType = Str::slug(
+    $validated['property_type']
+);
+
+$propertyTypeMapping = TaxonomyMapping::query()
+    ->where('source_type', 'houzez')
+    ->where('source_taxonomy', 'property_type')
+    ->where('source_slug', $sourcePropertyType)
+    ->where('target_taxonomy', 'property_type')
+    ->where('active', true)
+    ->where('agency_id', $agency->id)
+    ->first();
+
+if (!$propertyTypeMapping) {
+    $propertyTypeMapping = TaxonomyMapping::query()
+        ->where('source_type', 'houzez')
+        ->where('source_taxonomy', 'property_type')
+        ->where('source_slug', $sourcePropertyType)
+        ->where('target_taxonomy', 'property_type')
+        ->where('active', true)
+        ->whereNull('agency_id')
+        ->first();
+}
+
+$canonicalPropertyType =
+    $propertyTypeMapping?->target_value
+    ?: $sourcePropertyType;
+
+/*
+ * Keep legacy listing_type / price populated.
+ */
             $legacyListingType =
                 $validated['for_sale']
                     ? 'sale'
@@ -309,8 +343,8 @@ class PropertySyncController extends Controller
                         $validated['currency'] ?? 'THB'
                     ),
 
-                'property_type' =>
-                    $validated['property_type'],
+'property_type' =>
+    $canonicalPropertyType,
 
                 'bedrooms' =>
                     $validated['bedrooms'] ?? null,

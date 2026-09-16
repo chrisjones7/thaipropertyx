@@ -13,7 +13,53 @@ class TaxonomyMappingSeeder extends Seeder
     {
         /*
         |--------------------------------------------------------------------------
-        | Houzez Property Feature Mappings
+        | Global Houzez Property Type Mappings
+        |--------------------------------------------------------------------------
+        |
+        | These mappings normalize common Houzez property-type terminology
+        | into the canonical TPX property types.
+        |
+        | Agency-specific mappings can override these global defaults.
+        |
+        */
+
+        $propertyTypeMappings = [
+            'apartment'    => 'apartment',
+            'apartments'   => 'apartment',
+
+            'condo'        => 'condo',
+            'condos'       => 'condo',
+            'condominium'  => 'condo',
+            'condominiums' => 'condo',
+
+            'house'        => 'house',
+            'houses'       => 'house',
+
+            'villa'        => 'villa',
+            'villas'       => 'villa',
+        ];
+
+        foreach ($propertyTypeMappings as $houzezSlug => $tpxType) {
+            TaxonomyMapping::updateOrCreate(
+                [
+                    'agency_id' => null,
+                    'source_type' => 'houzez',
+                    'source_taxonomy' => 'property_type',
+                    'source_slug' => $houzezSlug,
+                ],
+                [
+                    'target_taxonomy' => 'property_type',
+                    'target_id' => null,
+                    'target_value' => $tpxType,
+                    'notes' => 'Global TPX property type mapping',
+                    'active' => true,
+                ]
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Global Houzez Property Feature Mappings
         |--------------------------------------------------------------------------
         |
         | Houzez installations may use shorter or different slugs from the
@@ -42,6 +88,7 @@ class TaxonomyMappingSeeder extends Seeder
 
             TaxonomyMapping::updateOrCreate(
                 [
+                    'agency_id' => null,
                     'source_type' => 'houzez',
                     'source_taxonomy' => 'property_feature',
                     'source_slug' => $houzezSlug,
@@ -49,6 +96,8 @@ class TaxonomyMappingSeeder extends Seeder
                 [
                     'target_taxonomy' => 'property_feature',
                     'target_id' => $feature->id,
+                    'target_value' => null,
+                    'notes' => 'Global TPX property feature mapping',
                     'active' => true,
                 ]
             );
@@ -56,7 +105,7 @@ class TaxonomyMappingSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | Houzez Property Label Mappings
+        | Global Houzez Property Label Mappings
         |--------------------------------------------------------------------------
         */
 
@@ -82,6 +131,7 @@ class TaxonomyMappingSeeder extends Seeder
 
             TaxonomyMapping::updateOrCreate(
                 [
+                    'agency_id' => null,
                     'source_type' => 'houzez',
                     'source_taxonomy' => 'property_label',
                     'source_slug' => $houzezSlug,
@@ -89,6 +139,8 @@ class TaxonomyMappingSeeder extends Seeder
                 [
                     'target_taxonomy' => 'property_label',
                     'target_id' => $label->id,
+                    'target_value' => null,
+                    'notes' => 'Global TPX property label mapping',
                     'active' => true,
                 ]
             );

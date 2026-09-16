@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ExchangePropertyController;
 use App\Http\Controllers\Api\PropertySyncController;
+use App\Http\Controllers\Api\SyndicationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -53,6 +54,7 @@ Route::middleware('tpx.api')->group(function () {
         '/v1/properties/sync',
         [PropertySyncController::class, 'sync']
     )->name('api.v1.properties.sync');
+
     /*
      * TPX Exchange property catalogue.
      *
@@ -63,5 +65,16 @@ Route::middleware('tpx.api')->group(function () {
         '/v1/exchange/properties',
         [ExchangePropertyController::class, 'index']
     )->name('api.v1.exchange.properties.index');
+
+    /*
+     * Syndicate an Exchange property to the authenticated agency.
+     *
+     * Creates the relationship between the property owner
+     * and the agency selecting the property for syndication.
+     */
+    Route::post(
+        '/v1/exchange/properties/{property}/syndicate',
+        [SyndicationController::class, 'store']
+    )->name('api.v1.exchange.properties.syndicate');
 
 });

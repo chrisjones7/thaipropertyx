@@ -11,103 +11,88 @@ class PropertyTaxonomySeeder extends Seeder
 {
     public function run(): void
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Property Features / Amenities
-        |--------------------------------------------------------------------------
-        |
-        | These form TPX's standard property-feature vocabulary.
-        | houzez_slug provides the default mapping hint for Houzez.
-        | Individual Houzez connectors can override mappings later.
-        |
-        */
-
         $features = [
-
             // Outdoor & Leisure
-            ['Private Pool', 'Outdoor & Leisure'],
-            ['Communal Pool', 'Outdoor & Leisure'],
-            ['Private Garden', 'Outdoor & Leisure'],
-            ['Communal Garden', 'Outdoor & Leisure'],
-            ['Balcony', 'Outdoor & Leisure'],
-            ['Terrace', 'Outdoor & Leisure'],
-            ['Roof Terrace', 'Outdoor & Leisure'],
-            ['BBQ Area', 'Outdoor & Leisure'],
-            ['Beach Access', 'Outdoor & Leisure'],
+            ['name' => 'Private Pool', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Communal Pool', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Private Garden', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Communal Garden', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Balcony', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Terrace', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Roof Terrace', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'BBQ Area', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Beach Access', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Outdoor Shower', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Swimming Pool', 'category' => 'Outdoor & Leisure'],
 
             // Building / Development
-            ['Clubhouse', 'Building / Development'],
-            ['Fitness / Gym', 'Building / Development'],
-            ['Elevator', 'Building / Development'],
-            ['Reception', 'Building / Development'],
-            ['Lobby', 'Building / Development'],
-            ['Co-working Space', 'Building / Development'],
-            ['Children\'s Play Area', 'Building / Development'],
+            ['name' => 'Clubhouse', 'category' => 'Building / Development'],
+            ['name' => 'Fitness / Gym', 'category' => 'Building / Development'],
+            ['name' => 'Elevator', 'category' => 'Building / Development'],
+            ['name' => 'Reception', 'category' => 'Building / Development'],
+            ['name' => 'Lobby', 'category' => 'Building / Development'],
+            ['name' => 'Co-working Space', 'category' => 'Building / Development'],
+            ['name' => "Children's Play Area", 'category' => 'Building / Development'],
+            ['name' => 'Sauna', 'category' => 'Building / Development'],
 
             // Security
-            ['24-Hour Security', 'Security'],
-            ['CCTV', 'Security'],
-            ['Gated Community', 'Security'],
-            ['Key Card Access', 'Security'],
-            ['Security Alarm', 'Security'],
+            ['name' => '24-Hour Security', 'category' => 'Security'],
+            ['name' => 'CCTV', 'category' => 'Security'],
+            ['name' => 'Gated Community', 'category' => 'Security'],
+            ['name' => 'Key Card Access', 'category' => 'Security'],
+            ['name' => 'Security Alarm', 'category' => 'Security'],
 
             // Interior
-            ['Air Conditioning', 'Interior'],
-            ['Fully Equipped Kitchen', 'Interior'],
-            ['Western Kitchen', 'Interior'],
-            ['Thai Kitchen', 'Interior'],
-            ['Built-in Wardrobes', 'Interior'],
-            ['Storage Room', 'Interior'],
-            ['Laundry Area', 'Interior'],
-            ['Bathtub', 'Interior'],
-            ['Jacuzzi', 'Interior'],
+            ['name' => 'Air Conditioning', 'category' => 'Interior'],
+            ['name' => 'Fully Equipped Kitchen', 'category' => 'Interior'],
+            ['name' => 'Western Kitchen', 'category' => 'Interior'],
+            ['name' => 'Thai Kitchen', 'category' => 'Interior'],
+            ['name' => 'Built-in Wardrobes', 'category' => 'Interior'],
+            ['name' => 'Storage Room', 'category' => 'Interior'],
+            ['name' => 'Laundry Area', 'category' => 'Interior'],
+            ['name' => 'Bathtub', 'category' => 'Interior'],
+            ['name' => 'Jacuzzi', 'category' => 'Interior'],
+            ['name' => 'Refrigerator', 'category' => 'Interior'],
 
             // Parking & Access
-            ['Covered Parking', 'Parking & Access'],
-            ['Garage', 'Parking & Access'],
-            ['Electric Gate', 'Parking & Access'],
-            ['Wheelchair Access', 'Parking & Access'],
+            ['name' => 'Covered Parking', 'category' => 'Parking & Access'],
+            ['name' => 'Garage', 'category' => 'Parking & Access'],
+            ['name' => 'Electric Gate', 'category' => 'Parking & Access'],
+            ['name' => 'Wheelchair Access', 'category' => 'Parking & Access'],
 
             // Utilities
-            ['Solar Panels', 'Utilities'],
-            ['Private Water Supply', 'Utilities'],
-            ['Government Water', 'Utilities'],
-            ['Government Electricity', 'Utilities'],
-            ['High-Speed Internet', 'Utilities'],
+            ['name' => 'Solar Panels', 'category' => 'Utilities'],
+            ['name' => 'Private Water Supply', 'category' => 'Utilities'],
+            ['name' => 'Government Water', 'category' => 'Utilities'],
+            ['name' => 'Government Electricity', 'category' => 'Utilities'],
+            ['name' => 'High-Speed Internet', 'category' => 'Utilities'],
 
             // Views
-            ['Sea View', 'Views'],
-            ['Mountain View', 'Views'],
-            ['Pool View', 'Views'],
-            ['Garden View', 'Views'],
-            ['Golf Course View', 'Views'],
-            ['City View', 'Views'],
+            ['name' => 'Sea View', 'category' => 'Views'],
+            ['name' => 'Mountain View', 'category' => 'Views'],
+            ['name' => 'Pool View', 'category' => 'Views'],
+            ['name' => 'Garden View', 'category' => 'Views'],
+            ['name' => 'Golf Course View', 'category' => 'Views'],
+            ['name' => 'City View', 'category' => 'Views'],
 
             // Lifestyle
-            ['Pet Friendly', 'Lifestyle'],
+            ['name' => 'Pet Friendly', 'category' => 'Lifestyle'],
         ];
 
-        foreach ($features as $index => [$name, $category]) {
-            $slug = Str::slug($name);
+        foreach ($features as $index => $feature) {
+            $slug = Str::slug($feature['name']);
 
             PropertyFeature::updateOrCreate(
                 ['slug' => $slug],
                 [
-                    'name' => $name,
-                    'category' => $category,
+                    'name' => $feature['name'],
+                    'category' => $feature['category'],
                     'houzez_slug' => $slug,
-                    'sort_order' => ($index + 1) * 10,
                     'active' => true,
+                    'sort_order' => ($index + 1) * 10,
                 ]
             );
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Property Labels
-        |--------------------------------------------------------------------------
-        */
 
         $labels = [
             'Reduced Price',
@@ -118,6 +103,8 @@ class PropertyTaxonomySeeder extends Seeder
             'Close to Golf Course',
             'Sea View',
             'Investment Opportunity',
+            'Close to MRT',
+            'Close to BTS',
         ];
 
         foreach ($labels as $index => $name) {
@@ -128,8 +115,8 @@ class PropertyTaxonomySeeder extends Seeder
                 [
                     'name' => $name,
                     'houzez_slug' => $slug,
-                    'sort_order' => ($index + 1) * 10,
                     'active' => true,
+                    'sort_order' => ($index + 1) * 10,
                 ]
             );
         }

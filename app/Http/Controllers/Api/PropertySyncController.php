@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+
 use App\Models\Property;
 use App\Models\PropertyFeature;
 use App\Models\PropertyLabel;
 use App\Models\PropertyMedia;
 use App\Models\PropertySource;
+use App\Models\TaxonomyMapping;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -423,20 +425,28 @@ class PropertySyncController extends Controller
              * Synchronize TPX property features and labels.
              */
             if (array_key_exists('features', $validated)) {
-                $featureIds = PropertyFeature::query()
+                $featureIds = TaxonomyMapping::query()
+                    ->where('source_type', 'houzez')
+                    ->where('source_taxonomy', 'property_feature')
                     ->where('active', true)
-                    ->whereIn('houzez_slug', array_unique($validated['features']))
-                    ->pluck('id')
+                    ->whereIn('source_slug', array_unique($validated['features']))
+                    ->pluck('target_id')
+                    ->unique()
+                    ->values()
                     ->all();
 
                 $property->features()->sync($featureIds);
             }
 
             if (array_key_exists('labels', $validated)) {
-                $labelIds = PropertyLabel::query()
+                $labelIds = TaxonomyMapping::query()
+                    ->where('source_type', 'houzez')
+                    ->where('source_taxonomy', 'property_label')
                     ->where('active', true)
-                    ->whereIn('houzez_slug', array_unique($validated['labels']))
-                    ->pluck('id')
+                    ->whereIn('source_slug', array_unique($validated['labels']))
+                    ->pluck('target_id')
+                    ->unique()
+                    ->values()
                     ->all();
 
                 $property->labels()->sync($labelIds);
@@ -597,7 +607,3 @@ class PropertySyncController extends Controller
         return $slug;
     }
 }
-
-
-
-

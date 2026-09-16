@@ -13,7 +13,7 @@ class SyndicationController extends Controller
     /**
      * Return the authenticated agency's syndicated properties.
      *
-     * This endpoint will be used by the receiving Houzez connector
+     * This endpoint is used by the receiving Houzez connector
      * to discover which TPX properties should exist on its website.
      */
     public function index(Request $request): JsonResponse
@@ -30,7 +30,7 @@ class SyndicationController extends Controller
         $validated = $request->validate([
             'status' => [
                 'nullable',
-                'in:pending,approved,active,paused,revoked',
+                'in:pending,approved,active,paused,revoked,all',
             ],
             'per_page' => [
                 'nullable',
@@ -39,6 +39,8 @@ class SyndicationController extends Controller
                 'max:100',
             ],
         ]);
+
+        $status = $validated['status'] ?? 'active';
 
         $query = Syndication::query()
             ->where('target_agency_id', $targetAgency->id)
@@ -55,19 +57,19 @@ class SyndicationController extends Controller
             ]);
 
         /*
-         * The Houzez connector will normally request active
-         * syndications only.
+         * By default only active syndications are returned.
          *
-         * A different status can be requested explicitly when
-         * required for administration or synchronization.
+         * The receiving connector can request status=all so that
+         * paused and revoked syndications are also returned. This
+         * allows the remote Houzez site to reliably unpublish
+         * listings when their TPX syndication state changes.
          */
-        $query->where(
-            'status',
-            $validated['status'] ?? 'active'
-        );
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
 
         $syndications = $query
-            ->orderByDesc('activated_at')
+            ->orderByDesc('updated_at')
             ->paginate($validated['per_page'] ?? 20);
 
         return response()->json([

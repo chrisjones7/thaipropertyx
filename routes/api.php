@@ -77,4 +77,15 @@ Route::middleware('tpx.api')->group(function () {
         [SyndicationController::class, 'store']
     )->name('api.v1.exchange.properties.syndicate');
 
+    /*
+     * Receiving agency syndication feed.
+     *
+     * Returns properties syndicated by the authenticated agency
+     * for synchronization with its Houzez website.
+     */
+    Route::get(
+        '/v1/syndications',
+        [SyndicationController::class, 'index']
+    )->name('api.v1.syndications.index');
+
 });

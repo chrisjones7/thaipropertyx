@@ -11,6 +11,72 @@ use Illuminate\Http\Request;
 class SyndicationController extends Controller
 {
     /**
+     * Return the authenticated agency's syndicated properties.
+     *
+     * This endpoint will be used by the receiving Houzez connector
+     * to discover which TPX properties should exist on its website.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $targetAgency = $request->attributes->get('tpx_agency');
+        $apiClient = $request->attributes->get('tpx_api_client');
+
+        if (!$targetAgency || !$apiClient) {
+            return response()->json([
+                'message' => 'Authenticated TPX agency could not be resolved.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'status' => [
+                'nullable',
+                'in:pending,approved,active,paused,revoked',
+            ],
+            'per_page' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:100',
+            ],
+        ]);
+
+        $query = Syndication::query()
+            ->where('target_agency_id', $targetAgency->id)
+            ->with([
+                'sourceAgency:id,name,slug',
+                'property' => function ($query) {
+                    $query->with([
+                        'agency:id,name,slug',
+                        'images',
+                        'features',
+                        'labels',
+                    ]);
+                },
+            ]);
+
+        /*
+         * The Houzez connector will normally request active
+         * syndications only.
+         *
+         * A different status can be requested explicitly when
+         * required for administration or synchronization.
+         */
+        $query->where(
+            'status',
+            $validated['status'] ?? 'active'
+        );
+
+        $syndications = $query
+            ->orderByDesc('activated_at')
+            ->paginate($validated['per_page'] ?? 20);
+
+        return response()->json([
+            'status' => 'ok',
+            'data' => $syndications,
+        ]);
+    }
+
+    /**
      * Create a syndication for a property from the TPX Exchange.
      */
     public function store(Request $request, Property $property): JsonResponse

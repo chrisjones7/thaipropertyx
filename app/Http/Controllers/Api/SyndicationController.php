@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\Syndication;
+use App\Models\TaxonomyMapping;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -70,7 +71,56 @@ class SyndicationController extends Controller
 
         $syndications = $query
             ->orderByDesc('updated_at')
-            ->paginate($validated['per_page'] ?? 20);
+            ->paginate($validated['per_page'] ?? 20)
+            ->withQueryString();
+
+        /*
+         * Translate canonical TPX property types into the local
+         * Houzez terminology used by the receiving agency.
+         *
+         * Example:
+         *
+         * TPX canonical type: condo
+         * Arnold Property Houzez type: condos
+         *
+         * The canonical property_type is deliberately preserved.
+         * houzez_property_type is supplied separately so the
+         * receiving connector knows which local Houzez taxonomy
+         * term should be assigned.
+         *
+         * If the receiving agency has no reverse mapping, the
+         * canonical TPX property type is used as the fallback.
+         */
+        $propertyTypeMappings = TaxonomyMapping::query()
+            ->where('agency_id', $targetAgency->id)
+            ->where('source_type', 'tpx')
+            ->where('source_taxonomy', 'property_type')
+            ->where('target_taxonomy', 'houzez_property_type')
+            ->where('active', true)
+            ->get()
+            ->keyBy('source_slug');
+
+        $syndications->getCollection()->transform(
+            function (Syndication $syndication) use ($propertyTypeMappings) {
+                if (!$syndication->property) {
+                    return $syndication;
+                }
+
+                $canonicalPropertyType =
+                    $syndication->property->property_type;
+
+                $mapping = $propertyTypeMappings->get(
+                    $canonicalPropertyType
+                );
+
+                $syndication->property->setAttribute(
+                    'houzez_property_type',
+                    $mapping?->target_value ?: $canonicalPropertyType
+                );
+
+                return $syndication;
+            }
+        );
 
         return response()->json([
             'status' => 'ok',

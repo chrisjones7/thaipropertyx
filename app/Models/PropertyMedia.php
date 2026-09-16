@@ -28,6 +28,44 @@ class PropertyMedia extends Model
         ];
     }
 
+    /**
+     * Return an absolute URL for property media.
+     */
+    public function getUrlAttribute($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (
+            str_starts_with($value, 'http://') ||
+            str_starts_with($value, 'https://')
+        ) {
+            return $value;
+        }
+
+        return url($value);
+    }
+
+    /**
+     * Return an absolute URL for property thumbnails.
+     */
+    public function getThumbnailUrlAttribute($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (
+            str_starts_with($value, 'http://') ||
+            str_starts_with($value, 'https://')
+        ) {
+            return $value;
+        }
+
+        return url($value);
+    }
+
     public function property()
     {
         return $this->belongsTo(Property::class);

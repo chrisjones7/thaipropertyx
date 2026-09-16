@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Property;
+use App\Models\PropertyFeature;
+use App\Models\PropertyLabel;
 use App\Models\PropertyMedia;
 use App\Models\PropertySource;
 use Illuminate\Http\JsonResponse;
@@ -121,6 +123,12 @@ class PropertySyncController extends Controller
              * When the images field is supplied, TPX treats it as the
              * authoritative gallery for this property.
              */
+            'features' => ['sometimes', 'array', 'max:100'],
+            'features.*' => ['required', 'string', 'max:150'],
+
+            'labels' => ['sometimes', 'array', 'max:50'],
+            'labels.*' => ['required', 'string', 'max:150'],
+
             'images' => ['sometimes', 'array', 'max:100'],
             'images.*.url' => ['required', 'url', 'max:2048'],
             'images.*.thumbnail_url' => ['nullable', 'url', 'max:2048'],
@@ -412,6 +420,29 @@ class PropertySyncController extends Controller
             );
 
             /*
+             * Synchronize TPX property features and labels.
+             */
+            if (array_key_exists('features', $validated)) {
+                $featureIds = PropertyFeature::query()
+                    ->where('active', true)
+                    ->whereIn('houzez_slug', array_unique($validated['features']))
+                    ->pluck('id')
+                    ->all();
+
+                $property->features()->sync($featureIds);
+            }
+
+            if (array_key_exists('labels', $validated)) {
+                $labelIds = PropertyLabel::query()
+                    ->where('active', true)
+                    ->whereIn('houzez_slug', array_unique($validated['labels']))
+                    ->pluck('id')
+                    ->all();
+
+                $property->labels()->sync($labelIds);
+            }
+
+            /*
              * Synchronize the owner's Houzez image gallery.
              *
              * Important:
@@ -566,3 +597,7 @@ class PropertySyncController extends Controller
         return $slug;
     }
 }
+
+
+
+

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ExchangePropertyController;
 use App\Http\Controllers\Api\PropertySyncController;
 use Illuminate\Support\Facades\Route;
 
@@ -52,5 +53,15 @@ Route::middleware('tpx.api')->group(function () {
         '/v1/properties/sync',
         [PropertySyncController::class, 'sync']
     )->name('api.v1.properties.sync');
+    /*
+     * TPX Exchange property catalogue.
+     *
+     * Returns active properties made available to the TPX Network
+     * by other agencies.
+     */
+    Route::get(
+        '/v1/exchange/properties',
+        [ExchangePropertyController::class, 'index']
+    )->name('api.v1.exchange.properties.index');
 
 });

@@ -17,6 +17,7 @@ class PropertyTaxonomySeeder extends Seeder
             ['name' => 'Communal Pool', 'category' => 'Outdoor & Leisure'],
             ['name' => 'Private Garden', 'category' => 'Outdoor & Leisure'],
             ['name' => 'Communal Garden', 'category' => 'Outdoor & Leisure'],
+            ['name' => 'Landscaped Gardens', 'category' => 'Outdoor & Leisure'],
             ['name' => 'Balcony', 'category' => 'Outdoor & Leisure'],
             ['name' => 'Terrace', 'category' => 'Outdoor & Leisure'],
             ['name' => 'Roof Terrace', 'category' => 'Outdoor & Leisure'],
@@ -37,6 +38,7 @@ class PropertyTaxonomySeeder extends Seeder
 
             // Security
             ['name' => '24-Hour Security', 'category' => 'Security'],
+            ['name' => 'Security', 'category' => 'Security'],
             ['name' => 'CCTV', 'category' => 'Security'],
             ['name' => 'Gated Community', 'category' => 'Security'],
             ['name' => 'Key Card Access', 'category' => 'Security'],

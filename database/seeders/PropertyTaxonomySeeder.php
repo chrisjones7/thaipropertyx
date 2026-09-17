@@ -46,6 +46,9 @@ class PropertyTaxonomySeeder extends Seeder
 
             // Interior
             ['name' => 'Air Conditioning', 'category' => 'Interior'],
+['name' => 'Fully Furnished', 'category' => 'Interior'],
+['name' => 'Partly Furnished', 'category' => 'Interior'],
+['name' => 'Unfurnished', 'category' => 'Interior'],
             ['name' => 'Fully Equipped Kitchen', 'category' => 'Interior'],
             ['name' => 'Western Kitchen', 'category' => 'Interior'],
             ['name' => 'Thai Kitchen', 'category' => 'Interior'],

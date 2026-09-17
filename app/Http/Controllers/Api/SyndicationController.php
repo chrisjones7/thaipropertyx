@@ -78,18 +78,9 @@ class SyndicationController extends Controller
          * Translate canonical TPX property types into the local
          * Houzez terminology used by the receiving agency.
          *
-         * Example:
-         *
-         * TPX canonical type: condo
-         * Arnold Property Houzez type: condos
-         *
-         * The canonical property_type is deliberately preserved.
-         * houzez_property_type is supplied separately so the
-         * receiving connector knows which local Houzez taxonomy
-         * term should be assigned.
-         *
-         * If the receiving agency has no reverse mapping, the
-         * canonical TPX property type is used as the fallback.
+         * The canonical property_type is preserved. A separate
+         * houzez_property_type attribute is supplied for the
+         * receiving connector.
          */
         $propertyTypeMappings = TaxonomyMapping::query()
             ->where('agency_id', $targetAgency->id)
@@ -100,22 +91,76 @@ class SyndicationController extends Controller
             ->get()
             ->keyBy('source_slug');
 
+        /*
+         * Translate canonical TPX property features into the local
+         * Houzez feature terminology used by the receiving agency.
+         *
+         * Example:
+         *
+         * TPX canonical feature: fitness-gym
+         * Receiving Houzez feature: gym
+         *
+         * If no agency-specific mapping exists, the canonical TPX
+         * feature slug is used as the fallback.
+         */
+        $propertyFeatureMappings = TaxonomyMapping::query()
+            ->where('agency_id', $targetAgency->id)
+            ->where('source_type', 'tpx')
+            ->where('source_taxonomy', 'property_feature')
+            ->where('target_taxonomy', 'houzez_property_feature')
+            ->where('active', true)
+            ->get()
+            ->keyBy('source_slug');
+
         $syndications->getCollection()->transform(
-            function (Syndication $syndication) use ($propertyTypeMappings) {
+            function (Syndication $syndication) use (
+                $propertyTypeMappings,
+                $propertyFeatureMappings
+            ) {
                 if (!$syndication->property) {
                     return $syndication;
                 }
 
+                /*
+                 * Property type mapping.
+                 */
                 $canonicalPropertyType =
                     $syndication->property->property_type;
 
-                $mapping = $propertyTypeMappings->get(
+                $propertyTypeMapping = $propertyTypeMappings->get(
                     $canonicalPropertyType
                 );
 
                 $syndication->property->setAttribute(
                     'houzez_property_type',
-                    $mapping?->target_value ?: $canonicalPropertyType
+                    $propertyTypeMapping?->target_value
+                        ?: $canonicalPropertyType
+                );
+
+                /*
+                 * Property feature mappings.
+                 *
+                 * We keep the original canonical features relation
+                 * untouched and provide a separate array containing
+                 * the Houzez feature slugs for the receiving site.
+                 */
+                $houzezPropertyFeatures = $syndication->property
+                    ->features
+                    ->map(function ($feature) use ($propertyFeatureMappings) {
+                        $mapping = $propertyFeatureMappings->get(
+                            $feature->slug
+                        );
+
+                        return $mapping?->target_value ?: $feature->slug;
+                    })
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                $syndication->property->setAttribute(
+                    'houzez_property_features',
+                    $houzezPropertyFeatures
                 );
 
                 return $syndication;

@@ -30,6 +30,18 @@ class Agency extends Model
         'status',
         'verified',
         'verified_at',
+
+        // Default property sharing / commission terms
+        'sharing_enabled',
+        'commission_model',
+        'listing_agency_split',
+        'cooperating_agency_split',
+        'sale_price_commission_percent',
+        'fixed_commission_amount',
+        'commission_currency',
+        'vat_treatment',
+        'commission_payable_when',
+        'sharing_terms',
     ];
 
     protected function casts(): array
@@ -37,6 +49,11 @@ class Agency extends Model
         return [
             'verified' => 'boolean',
             'verified_at' => 'datetime',
+            'sharing_enabled' => 'boolean',
+            'listing_agency_split' => 'decimal:2',
+            'cooperating_agency_split' => 'decimal:2',
+            'sale_price_commission_percent' => 'decimal:2',
+            'fixed_commission_amount' => 'decimal:2',
         ];
     }
 

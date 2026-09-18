@@ -55,3 +55,14 @@ Route::livewire('/admin/exchange', 'admin.exchange')
 Route::livewire('/admin/syndications', 'admin.syndications')
     ->middleware('auth')
     ->name('admin.syndications');
+Route::livewire('/dashboard', 'agency.dashboard')
+    ->middleware('auth')
+    ->name('agency.dashboard');
+
+Route::livewire('/company-profile', 'agency.company-profile')
+    ->middleware('auth')
+    ->name('agency.company-profile');
+
+Route::livewire('/sharing-terms', 'agency.sharing-terms')
+    ->middleware('auth')
+    ->name('agency.sharing-terms');

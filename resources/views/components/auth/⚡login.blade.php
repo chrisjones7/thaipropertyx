@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -37,7 +37,7 @@ new class extends Component
             return;
         }
 
-        $this->redirect('/admin', navigate: true);
+        $this->redirect($user->isPlatformAdmin() ? '/admin' : '/dashboard', navigate: true);
     }
 };
 ?>

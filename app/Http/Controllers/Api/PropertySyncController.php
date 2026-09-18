@@ -459,12 +459,61 @@ $canonicalPropertyType =
              * Synchronize TPX property features and labels.
              */
             if (array_key_exists('features', $validated)) {
-                $featureIds = TaxonomyMapping::query()
+
+                $sourceFeatureSlugs = collect($validated['features'])
+                    ->map(fn ($slug) => Str::slug($slug))
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                /*
+                 * Explicit agency-specific Houzez -> TPX mappings take
+                 * priority over global mappings. If no explicit mapping
+                 * exists, an exact active canonical TPX feature slug is
+                 * accepted automatically.
+                 */
+                $agencyFeatureMappings = TaxonomyMapping::query()
                     ->where('source_type', 'houzez')
                     ->where('source_taxonomy', 'property_feature')
+                    ->where('target_taxonomy', 'property_feature')
                     ->where('active', true)
-                    ->whereIn('source_slug', array_unique($validated['features']))
-                    ->pluck('target_id')
+                    ->where('agency_id', $agency->id)
+                    ->whereIn('source_slug', $sourceFeatureSlugs)
+                    ->get()
+                    ->keyBy('source_slug');
+
+                $globalFeatureMappings = TaxonomyMapping::query()
+                    ->where('source_type', 'houzez')
+                    ->where('source_taxonomy', 'property_feature')
+                    ->where('target_taxonomy', 'property_feature')
+                    ->where('active', true)
+                    ->whereNull('agency_id')
+                    ->whereIn('source_slug', $sourceFeatureSlugs)
+                    ->get()
+                    ->keyBy('source_slug');
+
+                $canonicalFeatures = PropertyFeature::query()
+                    ->where('active', true)
+                    ->whereIn('slug', $sourceFeatureSlugs)
+                    ->get()
+                    ->keyBy('slug');
+
+                $featureIds = $sourceFeatureSlugs
+                    ->map(function ($sourceSlug) use (
+                        $agencyFeatureMappings,
+                        $globalFeatureMappings,
+                        $canonicalFeatures
+                    ) {
+                        $mapping = $agencyFeatureMappings->get($sourceSlug)
+                            ?: $globalFeatureMappings->get($sourceSlug);
+
+                        if ($mapping?->target_id) {
+                            return (int) $mapping->target_id;
+                        }
+
+                        return $canonicalFeatures->get($sourceSlug)?->id;
+                    })
+                    ->filter()
                     ->unique()
                     ->values()
                     ->all();

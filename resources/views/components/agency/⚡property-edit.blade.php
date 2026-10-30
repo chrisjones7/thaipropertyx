@@ -8,14 +8,11 @@ use App\Models\PropertyLabel;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 
 new class extends Component
 {
@@ -743,8 +740,7 @@ new class extends Component
                 continue;
             }
 
-            $this->deleteStoredMediaFile($media->url);
-            $this->deleteStoredMediaFile($media->thumbnail_url);
+            app(\App\Services\PropertyImageStorage::class)->delete($media);
 
             $media->delete();
         }
@@ -777,82 +773,13 @@ new class extends Component
         $newMediaIds = [];
 
         foreach ($this->propertyImages as $index => $image) {
-            /*
-            |--------------------------------------------------------------------------
-            | Store Original
-            |--------------------------------------------------------------------------
-            */
-
-            $path = $image->store(
-                'properties/' . $property->id,
-                'public'
-            );
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Generate Optimised Thumbnail
-            |--------------------------------------------------------------------------
-            */
-
-            $thumbnailUrl = null;
-
-            try {
-                $thumbnailDirectory =
-                    'properties/' . $property->id . '/thumbnails';
-
-                Storage::disk('public')->makeDirectory(
-                    $thumbnailDirectory
-                );
-
-                $thumbnailFilename =
-                    pathinfo($path, PATHINFO_FILENAME) . '.jpg';
-
-                $thumbnailPath =
-                    $thumbnailDirectory . '/' . $thumbnailFilename;
-
-                $manager = ImageManager::usingDriver(
-                    Driver::class
-                );
-
-                $manager
-                    ->decode(
-                        Storage::disk('public')->path($path)
-                    )
-                    ->scaleDown(
-                        width: 480,
-                        height: 360
-                    )
-                    ->save(
-                        Storage::disk('public')->path(
-                            $thumbnailPath
-                        ),
-                        quality: 82
-                    );
-
-                $thumbnailUrl =
-                    '/storage/' . $thumbnailPath;
-            } catch (\Throwable $exception) {
-                report($exception);
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Save Media Record
-            |--------------------------------------------------------------------------
-            */
+            $imageData = app(\App\Services\PropertyImageStorage::class)
+                ->upload($image, (int) $property->id);
 
             $media = PropertyMedia::create([
                 'property_id' => $property->id,
                 'media_type' => 'image',
-                'url' => '/storage/' . $path,
-                'thumbnail_url' => $thumbnailUrl,
-                ...PropertyMedia::storageMetadata(
-                    'public',
-                    $path,
-                    'image'
-                ),
+                ...$imageData,
                 'title' => null,
                 'alt_text' => $property->title,
                 'sort_order' => $nextSortOrder++,
@@ -1068,24 +995,6 @@ new class extends Component
             } else {
                 $this->primarySelection = '';
             }
-        }
-    }
-
-
-    private function deleteStoredMediaFile(?string $url): void
-    {
-        if (!$url) {
-            return;
-        }
-
-        $path = ltrim($url, '/');
-
-        if (str_starts_with($path, 'storage/')) {
-            $path = Str::after($path, 'storage/');
-        }
-
-        if ($path !== '') {
-            Storage::disk('public')->delete($path);
         }
     }
 

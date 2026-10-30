@@ -66,6 +66,9 @@ Route::livewire('/admin/exchange', 'admin.exchange')
 Route::livewire('/admin/syndications', 'admin.syndications')
     ->middleware('auth')
     ->name('admin.syndications');
+Route::livewire('/admin/settings', 'admin.settings')
+    ->middleware('auth')
+    ->name('admin.settings');
 Route::livewire('/dashboard', 'agency.dashboard')
     ->middleware('auth')
     ->name('agency.dashboard');

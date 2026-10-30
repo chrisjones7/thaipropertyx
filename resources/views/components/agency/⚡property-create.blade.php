@@ -847,7 +847,7 @@ new class extends Component
 };
 ?>
 
-<x-admin-ui.layout title="Add Property">
+<x-agency-ui.layout title="Add Property">
 
     <div class="mx-auto max-w-6xl">
 
@@ -2357,7 +2357,7 @@ new class extends Component
 
     </div>
 
-</x-admin-ui.layout>
+</x-agency-ui.layout>
 
 
 <script>
@@ -2951,6 +2951,7 @@ new class extends Component
 
     })();
 </script>
+
 
 
 

@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -7,6 +8,28 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("
+                ALTER TABLE syndications
+                DROP CONSTRAINT IF EXISTS syndications_status_check
+            ");
+
+            DB::statement("
+                ALTER TABLE syndications
+                ADD CONSTRAINT syndications_status_check
+                CHECK (status IN (
+                    'pending',
+                    'approved',
+                    'active',
+                    'paused',
+                    'revoked',
+                    'removed'
+                ))
+            ");
+
+            return;
+        }
+
         DB::statement("
             ALTER TABLE syndications
             MODIFY status ENUM(
@@ -22,6 +45,27 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("
+                ALTER TABLE syndications
+                DROP CONSTRAINT IF EXISTS syndications_status_check
+            ");
+
+            DB::statement("
+                ALTER TABLE syndications
+                ADD CONSTRAINT syndications_status_check
+                CHECK (status IN (
+                    'pending',
+                    'approved',
+                    'active',
+                    'paused',
+                    'revoked'
+                ))
+            ");
+
+            return;
+        }
+
         DB::statement("
             ALTER TABLE syndications
             MODIFY status ENUM(

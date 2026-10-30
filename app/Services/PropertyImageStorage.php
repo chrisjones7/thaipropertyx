@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
+use Intervention\Image\Encoders\JpegEncoder;
 use RuntimeException;
 
 class PropertyImageStorage
@@ -60,7 +61,7 @@ class PropertyImageStorage
                 $thumbnail = $manager
                     ->decodePath($image->getRealPath())
                     ->scaleDown(width: 480, height: 360)
-                    ->toJpeg(82);
+                    ->encode(new JpegEncoder(quality: 82));
 
                 if (!$disk->put($thumbnailPath, (string) $thumbnail)) {
                     throw new RuntimeException('R2 thumbnail upload failed.');

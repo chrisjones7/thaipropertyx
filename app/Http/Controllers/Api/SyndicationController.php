@@ -174,7 +174,8 @@ class SyndicationController extends Controller
     }
 
     /**
-     * Create a syndication for a property from the TPX Exchange.
+     * Create or reactivate a syndication for a property
+     * from the TPX Exchange.
      */
     public function store(Request $request, Property $property): JsonResponse
     {
@@ -210,16 +211,52 @@ class SyndicationController extends Controller
         }
 
         /*
-         * Prevent duplicate syndications.
+         * Check for an existing syndication.
          *
-         * The database also has a unique constraint on
+         * The database has a unique constraint on
          * property_id + target_agency_id.
+         *
+         * We must reactivate an existing revoked record
+         * rather than creating a duplicate.
          */
         $existing = Syndication::where('property_id', $property->id)
             ->where('target_agency_id', $targetAgency->id)
             ->first();
 
         if ($existing) {
+
+            /*
+             * Reactivate a previously revoked syndication.
+             *
+             * Preserve the original syndication ID so the
+             * receiving Houzez connector can identify the
+             * existing property.
+             */
+            if ($existing->status === 'revoked') {
+
+                $existing->status = 'active';
+                $existing->revoked_at = null;
+                $existing->approved_at = now();
+                $existing->activated_at = now();
+                $existing->save();
+
+                $existing->load([
+                    'property',
+                    'sourceAgency:id,name,slug',
+                    'targetAgency:id,name,slug',
+                ]);
+
+                return response()->json([
+                    'status' => 'ok',
+                    'message' => 'Previously revoked syndication successfully reactivated.',
+                    'data' => $existing,
+                ], 200);
+            }
+
+            /*
+             * Prevent duplicate syndications when an existing
+             * record is active, pending, approved or paused.
+             */
             return response()->json([
                 'message' => 'This property has already been selected by your agency.',
                 'data' => $existing,

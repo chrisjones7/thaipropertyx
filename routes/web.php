@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -80,7 +80,7 @@ Route::livewire('/properties', 'agency.properties')
     ->middleware('auth')
     ->name('agency.properties');
 
-Route::livewire('/properties/create', 'admin.property-create')
+Route::livewire('/properties/create', 'agency.property-create')
     ->middleware('auth')
     ->name('agency.properties.create');
 Route::livewire('/properties/{property}/edit', 'agency.property-edit')
@@ -129,3 +129,4 @@ Route::livewire('/sharing-terms', 'agency.sharing-terms')
 Route::livewire('/connector-api', 'agency.connector-api')
     ->middleware('auth')
     ->name('agency.connector-api');
+

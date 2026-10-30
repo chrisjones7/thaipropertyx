@@ -30,7 +30,41 @@ new class extends Component
     public function with(): array
     {
         $query = Agency::query()
-            ->withCount(['properties', 'users']);
+            ->withCount([
+                'properties',
+                'users',
+
+                'properties as tpx_media_count' => function ($query) {
+                    $query->join(
+                        'property_media',
+                        'properties.id',
+                        '=',
+                        'property_media.property_id'
+                    )
+                    ->whereNotNull('property_media.storage_disk')
+                    ->whereNotNull('property_media.storage_path');
+                },
+
+                'properties as external_media_count' => function ($query) {
+                    $query->join(
+                        'property_media',
+                        'properties.id',
+                        '=',
+                        'property_media.property_id'
+                    )
+                    ->whereNull('property_media.storage_disk');
+                },
+            ])
+            ->withSum([
+                'properties as storage_bytes' => function ($query) {
+                    $query->join(
+                        'property_media',
+                        'properties.id',
+                        '=',
+                        'property_media.property_id'
+                    );
+                }
+            ], 'property_media.file_size');
 
         if ($this->search !== '') {
             $search = '%' . $this->search . '%';
@@ -383,7 +417,7 @@ new class extends Component
     {{-- AGENCY DIRECTORY --}}
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
 
             <div>
 
@@ -391,7 +425,7 @@ new class extends Component
                     Agency Directory
                 </h4>
 
-                <p class="mt-1 text-sm text-slate-500">
+                <p class="mt-0.5 text-xs text-slate-500">
                     Participating organisations and their exchange activity.
                 </p>
 
@@ -408,31 +442,35 @@ new class extends Component
 
                     <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
 
-                        <th class="px-6 py-4 font-semibold">
+                        <th class="px-4 py-3 font-semibold">
                             Agency
                         </th>
 
-                        <th class="px-6 py-4 font-semibold">
+                        <th class="px-4 py-3 font-semibold">
                             Location
                         </th>
 
-                        <th class="px-6 py-4 font-semibold">
-                            Listings
+                        <th class="px-4 py-3 font-semibold">
+                            Activity
                         </th>
 
-                        <th class="px-6 py-4 font-semibold">
-                            Agents
+                        <th class="px-4 py-3 font-semibold">
+                            Media
                         </th>
 
-                        <th class="px-6 py-4 font-semibold">
+                        <th class="px-4 py-3 font-semibold">
+                            Storage
+                        </th>
+
+                        <th class="px-4 py-3 font-semibold">
                             Status
                         </th>
 
-                        <th class="px-6 py-4 font-semibold">
+                        <th class="px-4 py-3 font-semibold">
                             Verification
                         </th>
 
-                        <th class="px-6 py-4 text-right font-semibold">
+                        <th class="px-4 py-3 text-right font-semibold">
                             Action
                         </th>
 
@@ -441,14 +479,14 @@ new class extends Component
                 </thead>
 
 
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-slate-200">
 
                     @forelse ($agencies as $agency)
 
-                        <tr class="group transition hover:bg-slate-50/70">
+                        <tr style="border-bottom: 1px solid #e2e8f0 !important;" class="group transition hover:bg-slate-50/70">
 
                             {{-- AGENCY --}}
-                            <td class="px-6 py-5">
+                            <td class="px-4 py-3">
 
                                 <div class="flex items-center gap-4">
 
@@ -474,7 +512,7 @@ new class extends Component
 
 
                             {{-- LOCATION --}}
-                            <td class="px-6 py-5 text-sm text-slate-600">
+                            <td class="px-4 py-3 text-sm text-slate-600">
 
                                 @if ($agency->district || $agency->province)
 
@@ -502,28 +540,75 @@ new class extends Component
                             </td>
 
 
-                            {{-- LISTINGS --}}
-                            <td class="px-6 py-5">
+                            {{-- ACTIVITY --}}
+                            <td class="px-4 py-3">
 
-                                <div class="inline-flex min-w-10 items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-bold text-slate-800">
+                                <div class="text-sm font-semibold text-slate-800 whitespace-nowrap">
                                     {{ $agency->properties_count }}
+                                    {{ \Illuminate\Support\Str::plural('Listing', $agency->properties_count) }}
+                                </div>
+
+                                <div class="mt-1 text-xs text-slate-400 whitespace-nowrap">
+                                    {{ $agency->users_count }}
+                                    {{ \Illuminate\Support\Str::plural('Agent', $agency->users_count) }}
                                 </div>
 
                             </td>
 
 
-                            {{-- AGENTS --}}
-                            <td class="px-6 py-5">
+                            {{-- MEDIA --}}
+                            <td class="px-4 py-3">
 
-                                <div class="inline-flex min-w-10 items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-bold text-slate-800">
-                                    {{ $agency->users_count }}
+                                <div class="text-sm font-semibold text-slate-800">
+                                    {{ $agency->tpx_media_count }} TPX
+                                </div>
+
+                                <div class="mt-1 text-xs text-slate-400">
+                                    {{ $agency->external_media_count }} external
+                                </div>
+
+                            </td>
+
+
+                            {{-- STORAGE --}}
+                            <td class="px-4 py-3">
+
+                                @php
+                                    $storageBytes = (int) ($agency->storage_bytes ?? 0);
+
+                                    if ($storageBytes >= 1073741824) {
+                                        $storageDisplay = number_format(
+                                            $storageBytes / 1073741824,
+                                            2
+                                        ) . ' GB';
+                                    } elseif ($storageBytes >= 1048576) {
+                                        $storageDisplay = number_format(
+                                            $storageBytes / 1048576,
+                                            2
+                                        ) . ' MB';
+                                    } elseif ($storageBytes >= 1024) {
+                                        $storageDisplay = number_format(
+                                            $storageBytes / 1024,
+                                            1
+                                        ) . ' KB';
+                                    } else {
+                                        $storageDisplay = $storageBytes . ' B';
+                                    }
+                                @endphp
+
+                                <div class="text-sm font-semibold text-slate-800">
+                                    {{ $storageDisplay }}
+                                </div>
+
+                                <div class="mt-1 text-xs text-slate-400">
+                                    TPX storage
                                 </div>
 
                             </td>
 
 
                             {{-- STATUS --}}
-                            <td class="px-6 py-5">
+                            <td class="px-4 py-3">
 
                                 @php
 
@@ -548,7 +633,7 @@ new class extends Component
                                 @endphp
 
                                 <span
-                                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClasses }}"
+                                    class="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset {{ $statusClasses }}"
                                 >
                                     {{ ucfirst($agency->status) }}
                                 </span>
@@ -557,7 +642,7 @@ new class extends Component
 
 
                             {{-- VERIFICATION --}}
-                            <td class="px-6 py-5">
+                            <td class="px-4 py-3">
 
                                 @if ($agency->verified)
 
@@ -597,12 +682,12 @@ new class extends Component
 
 
                             {{-- ACTION --}}
-                            <td class="px-6 py-5 text-right">
+                            <td class="px-4 py-3 text-right">
 
                                 <a
     href="{{ route('admin.agencies.edit', $agency) }}"
     wire:navigate
-    class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+    class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 hover:underline"
 >
 
     Manage
@@ -633,7 +718,7 @@ new class extends Component
                         <tr>
 
                             <td
-                                colspan="7"
+                                colspan="8"
                                 class="px-6 py-20 text-center"
                             >
 
@@ -659,7 +744,7 @@ new class extends Component
                                     No agencies found
                                 </p>
 
-                                <p class="mt-1 text-sm text-slate-500">
+                                <p class="mt-0.5 text-xs text-slate-500">
                                     Try changing your search or status filter.
                                 </p>
 

@@ -834,6 +834,11 @@ new class extends Component
                 'media_type' => 'image',
                 'url' => '/storage/' . $path,
                 'thumbnail_url' => $thumbnailUrl,
+                ...PropertyMedia::storageMetadata(
+                    'public',
+                    $path,
+                    'image'
+                ),
                 'title' => null,
                 'alt_text' => $property->title,
                 'sort_order' => $nextSortOrder++,

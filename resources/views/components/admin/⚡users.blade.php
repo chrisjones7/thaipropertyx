@@ -444,13 +444,13 @@ new class extends Component
     {{-- USER DIRECTORY --}}
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-        <div class="border-b border-slate-200 px-6 py-5">
+        <div class="border-b border-slate-200 px-4 py-3">
 
             <h4 class="text-lg font-semibold text-slate-900">
                 User Directory
             </h4>
 
-            <p class="mt-1 text-sm text-slate-500">
+            <p class="mt-0.5 text-xs text-slate-500">
                 Accounts with access to the ThaiPropertyX platform and agency network.
             </p>
 
@@ -463,25 +463,25 @@ new class extends Component
 
                 <thead class="bg-slate-50">
 
-                    <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+                    <tr style="border-bottom: 1px solid #e2e8f0 !important;" class="border-b !border-slate-200 text-xs uppercase tracking-wider text-slate-500">
 
-                        <th class="px-6 py-4 font-semibold">
+                        <th class="px-4 py-3 font-semibold">
                             User
                         </th>
 
-                        <th class="px-6 py-4 font-semibold">
+                        <th class="px-4 py-3 font-semibold">
                             Agency
                         </th>
 
-                        <th class="px-6 py-4 font-semibold">
+                        <th class="px-4 py-3 font-semibold">
                             Role
                         </th>
 
-                        <th class="px-6 py-4 font-semibold">
+                        <th class="px-4 py-3 font-semibold">
                             Status
                         </th>
 
-                        <th class="px-6 py-4 font-semibold">
+                        <th class="px-4 py-3 font-semibold">
                             Email Verified
                         </th>
 
@@ -494,14 +494,14 @@ new class extends Component
                 </thead>
 
 
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-slate-200 [&>tr]:!border-slate-200">
 
                     @forelse ($users as $user)
 
-                        <tr class="transition hover:bg-slate-50/70">
+                        <tr style="border-bottom: 1px solid #e2e8f0 !important;" class="transition hover:bg-slate-50/70">
 
                             {{-- USER --}}
-                            <td class="px-6 py-5">
+                            <td class="px-4 py-3">
 
                                 <div class="flex items-center gap-4">
 
@@ -528,7 +528,7 @@ new class extends Component
 
 
                             {{-- AGENCY --}}
-                            <td class="px-6 py-5">
+                            <td class="px-4 py-3">
 
                                 @if ($user->agency)
 
@@ -566,7 +566,7 @@ new class extends Component
 
 
                             {{-- ROLE --}}
-                            <td class="px-6 py-5">
+                            <td class="px-4 py-3">
 
                                 @php
                                     $roleClasses = match ($user->role) {
@@ -600,7 +600,7 @@ new class extends Component
 
 
                                 <span
-                                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $roleClasses }}"
+                                    class="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset {{ $roleClasses }}"
                                 >
                                     {{ $roleLabel }}
                                 </span>
@@ -609,7 +609,7 @@ new class extends Component
 
 
                             {{-- STATUS --}}
-                            <td class="px-6 py-5">
+                            <td class="px-4 py-3">
 
                                 @php
                                     $statusClasses = match ($user->status) {
@@ -632,7 +632,7 @@ new class extends Component
 
 
                                 <span
-                                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClasses }}"
+                                    class="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset {{ $statusClasses }}"
                                 >
                                     {{ ucfirst($user->status) }}
                                 </span>
@@ -641,7 +641,7 @@ new class extends Component
 
 
                             {{-- EMAIL VERIFIED --}}
-                            <td class="px-6 py-5">
+                            <td class="px-4 py-3">
 
                                 @if ($user->email_verified_at)
 
@@ -681,7 +681,7 @@ new class extends Component
 
 
                             {{-- ACTION --}}
-                            <td class="px-6 py-5 text-right">
+                            <td class="px-4 py-3 text-right">
 
                                 <a
                                     href="{{ route('admin.users.edit', $user) }}"
@@ -714,7 +714,7 @@ new class extends Component
 
                     @empty
 
-                        <tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0 !important;">
 
                             <td
                                 colspan="6"
@@ -743,7 +743,7 @@ new class extends Component
                                     No users found
                                 </p>
 
-                                <p class="mt-1 text-sm text-slate-500">
+                                <p class="mt-0.5 text-xs text-slate-500">
                                     Try changing your search or filters.
                                 </p>
 

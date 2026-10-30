@@ -141,15 +141,21 @@ class PropertySyncController extends Controller
         ]);
 
         /*
-         * A property must have at least one commercial listing type.
+         * Active listings must have at least one commercial listing type.
+         *
+         * Sold and rented properties remain in TPX as historical listings,
+         * so they no longer need to be actively offered for sale or rent.
          */
+        $propertyStatus = $validated['status'] ?? 'active';
+
         if (
             !$validated['for_sale'] &&
-            !$validated['for_rent']
+            !$validated['for_rent'] &&
+            !in_array($propertyStatus, ['sold', 'rented'], true)
         ) {
             throw ValidationException::withMessages([
                 'for_sale' => [
-                    'The property must be for sale, for rent, or both.',
+                    'The property must be for sale, for rent, or both unless it has been sold or rented.',
                 ],
             ]);
         }
@@ -184,7 +190,8 @@ class PropertySyncController extends Controller
 
         $result = DB::transaction(function () use (
             $validated,
-            $agency
+            $agency,
+            $propertyStatus
         ) {
             /*
              * Find the existing TPX property through its Houzez source.
@@ -257,18 +264,29 @@ $canonicalPropertyType =
     $propertyTypeMapping?->target_value
     ?: $sourcePropertyType;
 
-/*
- * Keep legacy listing_type / price populated.
- */
-            $legacyListingType =
-                $validated['for_sale']
-                    ? 'sale'
-                    : 'rent';
-
-            $legacyPrice =
-                $validated['for_sale']
-                    ? ($validated['sale_price'] ?? 0)
-                    : ($validated['rental_price'] ?? 0);
+            /*
+             * Keep legacy listing_type / price populated.
+             *
+             * For completed listings, preserve the original commercial
+             * type and price. New sold/rented imports infer their original
+             * type from the completed lifecycle state.
+             */
+            if ($validated['for_sale']) {
+                $legacyListingType = 'sale';
+                $legacyPrice = $validated['sale_price'] ?? 0;
+            } elseif ($validated['for_rent']) {
+                $legacyListingType = 'rent';
+                $legacyPrice = $validated['rental_price'] ?? 0;
+            } elseif (!$isNewProperty) {
+                $legacyListingType = $property->listing_type;
+                $legacyPrice = $property->price;
+            } elseif ($propertyStatus === 'sold') {
+                $legacyListingType = 'sale';
+                $legacyPrice = $validated['sale_price'] ?? 0;
+            } else {
+                $legacyListingType = 'rent';
+                $legacyPrice = $validated['rental_price'] ?? 0;
+            }
 
             /*
              * Exchange timestamps.
@@ -326,13 +344,13 @@ $canonicalPropertyType =
                     $validated['for_rent'],
 
                 'sale_price' =>
-                    $validated['for_sale']
-                        ? ($validated['sale_price'] ?? null)
+                    $validated['for_sale'] || $propertyStatus === 'sold'
+                        ? ($validated['sale_price'] ?? $property->sale_price)
                         : null,
 
                 'rental_price' =>
-                    $validated['for_rent']
-                        ? ($validated['rental_price'] ?? null)
+                    $validated['for_rent'] || $propertyStatus === 'rented'
+                        ? ($validated['rental_price'] ?? $property->rental_price)
                         : null,
 
                 'rental_period' =>
@@ -357,9 +375,12 @@ $canonicalPropertyType =
 
                 'building_size' =>
                     $validated['building_size'] ?? null,
-
                 'size_unit' =>
-                    $validated['size_unit'] ?? 'sqm',
+                    match (preg_replace('/[^a-z0-9]/', '', strtolower(trim($validated['size_unit'] ?? 'sqm')))) {
+                        'sqft', 'ft2' => 'sqft',
+                        'sqm', 'sqm2', 'm2' => 'sqm',
+                        default => 'sqm',
+                    },
 
                 'furnishing' =>
                     $validated['furnishing'] ?? null,
@@ -690,3 +711,4 @@ $canonicalPropertyType =
         return $slug;
     }
 }
+

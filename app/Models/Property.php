@@ -12,6 +12,7 @@ class Property extends Model
 {
     protected $fillable = [
         'agency_id',
+        'assigned_user_id',
         'reference',
         'title',
         'slug',
@@ -114,6 +115,11 @@ class Property extends Model
     public function agency(): BelongsTo
     {
         return $this->belongsTo(Agency::class);
+    }
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     public function media(): HasMany

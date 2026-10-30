@@ -27,7 +27,7 @@
             <nav class="flex-1 px-4 py-6 space-y-2">
 
                 <a
-                    href="/admin"
+                    href="{{ auth()->user()->isPlatformAdmin() ? url('/admin') : route('agency.dashboard') }}"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl
                     {{ request()->is('admin') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
                 >
@@ -51,7 +51,7 @@
                 </a>
 
                 <a
-                    href="/admin/properties"
+                    href="{{ auth()->user()->isPlatformAdmin() ? url('/admin/properties') : route('agency.properties') }}"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl
                     {{ request()->is('admin/properties*') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
                 >
@@ -75,7 +75,7 @@
                 </a>
 
                 <a
-                    href="/admin/users"
+                    href="{{ auth()->user()->isPlatformAdmin() ? url('/admin/users') : route('agency.team-agents') }}"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl
                     {{ request()->is('admin/users*') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
                 >
@@ -143,12 +143,16 @@
                         Platform Administrator
                     </p>
 
-                    <button
-                        wire:click="logout"
-                        class="mt-4 w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition"
-                    >
-                        Sign out
-                    </button>
+                    <form method="POST" action="{{ route('logout') }}" class="mt-4">
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition"
+                        >
+                            Sign out
+                        </button>
+                    </form>
 
                 </div>
             </div>

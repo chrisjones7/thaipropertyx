@@ -81,7 +81,7 @@ new class extends Component
 
             'commission_model' => [
                 'required',
-                'in:split,sale_percentage,fixed_fee,custom'
+                'in:split,sale_percentage,fixed_fee,custom,not_applicable'
             ],
 
             'commission_currency' => [
@@ -351,6 +351,27 @@ new class extends Component
                                 <div class="mt-1 text-sm text-slate-500">
                                     No standard amount. Commercial terms are agreed
                                     directly between the agencies.
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="cursor-pointer rounded-xl border border-slate-200 p-4 hover:border-amber-400">
+                        <div class="flex gap-3">
+                            <input
+                                type="radio"
+                                wire:model.live="commission_model"
+                                value="not_applicable"
+                                class="mt-1"
+                            >
+
+                            <div>
+                                <div class="font-semibold text-slate-900">
+                                    N/A — Commission Not Applicable
+                                </div>
+
+                                <div class="mt-1 text-sm text-slate-500">
+                                    No inter-agency commission applies, for example within a franchise or internal network.
                                 </div>
                             </div>
                         </div>

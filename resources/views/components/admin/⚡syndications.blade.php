@@ -19,6 +19,13 @@ new class extends Component
     public ?string $successMessage = null;
     public ?string $errorMessage = null;
 
+    public int $perPage = 25;
+
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
+    }
+
     public function mount(): void
     {
         abort_unless(Auth::check(), 403);
@@ -291,7 +298,7 @@ new class extends Component
         }
 
         return [
-            'syndications' => $query->paginate(20),
+            'syndications' => $query->paginate($this->perPage),
             'agencies' => $agencies,
             'totalSyndications' => (clone $statsBase)->count(),
             'activeSyndications' => (clone $statsBase)
@@ -505,38 +512,39 @@ new class extends Component
 
             <div class="overflow-x-auto">
 
-                <table style="width:100%;" class="divide-y divide-slate-200">
+                <table style="width:100%;" class="w-full">
 
                     <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <tr class="border-b border-slate-200">
+
+                            <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                 Property
                             </th>
 
-                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
-                                Source Agency
+                            <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                Source
                             </th>
 
-                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
-                                Receiving Agency
+                            <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                Receiving
                             </th>
 
-                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+                            <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                 Status
                             </th>
 
-                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+                            <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                 Dates
                             </th>
 
-                            <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
+                            <th class="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                 Actions
                             </th>
+
                         </tr>
                     </thead>
 
-
-                    <tbody class="divide-y divide-slate-100 bg-white">
+                    <tbody class="bg-white">
 
                         @forelse ($syndications as $syndication)
 
@@ -545,48 +553,56 @@ new class extends Component
                                 $image = $property?->primaryImage;
                             @endphp
 
-                            <tr class="align-top">
+                            <tr class="align-middle border-b border-slate-100 last:border-b-0">
 
                                 {{-- PROPERTY --}}
-                                <td class="px-6 py-5">
+                                <td class="px-4 py-3">
 
-                                    <div class="flex min-w-[280px] items-start gap-4">
+                                    <div class="flex min-w-[250px] items-center gap-3">
 
                                         <div
-                                            style="width:96px;height:80px;flex:0 0 96px;"
-                                            class="overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                                            style="width:56px;height:44px;flex:0 0 56px;"
+                                            class="overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
                                         >
+
                                             @if ($image)
+
                                                 <img
                                                     src="{{ asset(ltrim($image->thumbnail_url ?: $image->url, '/')) }}"
                                                     alt="{{ $property?->title }}"
-                                                    style="width:96px;height:80px;object-fit:cover;"
+                                                    style="width:56px;height:44px;object-fit:cover;"
                                                 >
+
                                             @else
+
                                                 <div
-                                                    style="width:96px;height:80px;"
-                                                    class="flex items-center justify-center text-xs font-semibold text-slate-400"
+                                                    style="width:56px;height:44px;"
+                                                    class="flex items-center justify-center text-[9px] font-semibold text-slate-400"
                                                 >
                                                     No image
                                                 </div>
-                                            @endif
-                                        </div>
 
+                                            @endif
+
+                                        </div>
 
                                         <div class="min-w-0">
 
-                                            <p class="font-bold text-slate-900">
+                                            <p class="truncate text-sm font-bold text-slate-900">
                                                 {{ $property?->title ?? 'Property unavailable' }}
                                             </p>
 
                                             @if ($property?->reference)
-                                                <p class="mt-1 text-xs font-semibold text-slate-500">
+
+                                                <p class="mt-0.5 truncate text-[10px] font-semibold text-slate-500">
                                                     Ref: {{ $property->reference }}
                                                 </p>
+
                                             @endif
 
                                             @if ($property)
-                                                <p class="mt-1 text-xs text-slate-500">
+
+                                                <p class="mt-0.5 truncate text-[10px] text-slate-400">
                                                     {{ collect([
                                                         $property->subdistrict,
                                                         $property->district,
@@ -594,17 +610,24 @@ new class extends Component
                                                     ])->filter()->implode(', ') }}
                                                 </p>
 
-                                                <p class="mt-2">
+                                                <div class="mt-1">
+
                                                     @if ($property->exchange_available)
-                                                        <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                                                            Available to Network
+
+                                                        <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                                                            Available
                                                         </span>
+
                                                     @else
-                                                        <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
-                                                            Withdrawn from Network
+
+                                                        <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-500 ring-1 ring-inset ring-slate-200">
+                                                            Withdrawn
                                                         </span>
+
                                                     @endif
-                                                </p>
+
+                                                </div>
+
                                             @endif
 
                                         </div>
@@ -613,119 +636,126 @@ new class extends Component
 
                                 </td>
 
-
                                 {{-- SOURCE --}}
-                                <td class="px-6 py-5">
-                                    <p class="font-semibold text-slate-900">
+                                <td class="px-4 py-3">
+
+                                    <p class="text-xs font-semibold text-slate-900">
                                         {{ $syndication->sourceAgency?->name ?? 'Unknown agency' }}
                                     </p>
 
-                                    <p class="mt-1 text-xs text-slate-500">
-                                        Owner / canonical source
+                                    <p class="mt-0.5 text-[10px] text-slate-400">
+                                        Owner / source
                                     </p>
+
                                 </td>
 
-
                                 {{-- TARGET --}}
-                                <td class="px-6 py-5">
-                                    <p class="font-semibold text-slate-900">
+                                <td class="px-4 py-3">
+
+                                    <p class="text-xs font-semibold text-slate-900">
                                         {{ $syndication->targetAgency?->name ?? 'Unknown agency' }}
                                     </p>
 
-                                    <p class="mt-1 text-xs text-slate-500">
-                                        Receiving / syndicating agency
+                                    <p class="mt-0.5 text-[10px] text-slate-400">
+                                        Receiving agency
                                     </p>
+
                                 </td>
 
-
                                 {{-- STATUS --}}
-                                <td class="px-6 py-5">
+                                <td class="px-4 py-3">
 
                                     @if ($syndication->status === 'active')
-                                        <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                                            Active
-                                        </span>
+
+                                        <span class="text-sm font-medium text-emerald-600">Active</span>
 
                                     @elseif ($syndication->status === 'paused')
-                                        <span class="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-200">
+
+                                        <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-200">
                                             Paused
                                         </span>
 
                                     @elseif ($syndication->status === 'revoked')
-                                        <span class="inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 ring-1 ring-inset ring-red-200">
-                                            Revoked
-                                        </span>
+
+                                        <span class="text-sm font-medium text-red-600">Revoked</span>
 
                                     @elseif ($syndication->status === 'approved')
-                                        <span class="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-200">
+
+                                        <span class="inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-200">
                                             Approved
                                         </span>
 
                                     @else
-                                        <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-inset ring-slate-200">
+
+                                        <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 ring-1 ring-inset ring-slate-200">
                                             {{ ucfirst($syndication->status) }}
                                         </span>
+
                                     @endif
 
                                 </td>
 
-
                                 {{-- DATES --}}
-                                <td class="px-6 py-5">
+                                <td class="px-4 py-3">
 
-                                    <div class="space-y-1 text-xs text-slate-500">
+                                    <div class="space-y-0.5 text-[10px] text-slate-500 whitespace-nowrap">
 
                                         <p>
-                                            <span class="font-semibold text-slate-700">Created:</span>
+                                            <span class="font-semibold text-slate-600">Created:</span>
                                             {{ $syndication->created_at?->format('d M Y, H:i') }}
                                         </p>
 
                                         @if ($syndication->activated_at)
+
                                             <p>
-                                                <span class="font-semibold text-slate-700">Activated:</span>
+                                                <span class="font-semibold text-slate-600">Active:</span>
                                                 {{ $syndication->activated_at->format('d M Y, H:i') }}
                                             </p>
+
                                         @endif
 
                                         @if ($syndication->revoked_at)
+
                                             <p>
-                                                <span class="font-semibold text-slate-700">Revoked:</span>
+                                                <span class="font-semibold text-slate-600">Revoked:</span>
                                                 {{ $syndication->revoked_at->format('d M Y, H:i') }}
                                             </p>
+
                                         @endif
 
                                     </div>
 
                                 </td>
 
-
                                 {{-- ACTIONS --}}
-                                <td class="px-6 py-5 text-right">
+                                <td class="px-4 py-3 text-right align-middle">
 
-                                    <div class="flex flex-col items-end gap-2">
+                                    <div class="flex flex-col items-end gap-1">
 
                                         @if ($property)
-                                            <a
-                                                href="{{ route('admin.properties.edit', $property) }}"
-                                                class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
-                                            >
-                                                View Property
-                                            </a>
-                                        @endif
 
+                                            <a
+                                                href="{{ route('agency.properties.view', $property) }}"
+                                                class="text-[10px] font-semibold text-slate-600 hover:text-slate-950 hover:underline"
+                                            >
+                                                View
+                                            </a>
+
+                                        @endif
 
                                         @if ($syndication->status === 'active')
-                                            <button
-                                                type="button"
-                                                wire:click="pauseSyndication({{ $syndication->id }})"
-                                                wire:confirm="Pause this syndication for the receiving agency? The source property will remain available to the TPX Network."
-                                                wire:loading.attr="disabled"
-                                                class="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:cursor-wait disabled:opacity-50"
-                                            >
-                                                Pause
-                                            </button>
-                                        @endif
 
+                                            <button
+    type="button"
+    wire:click="pauseSyndication({{ $syndication->id }})"
+    wire:confirm="Pause this syndication for the receiving agency? The source property will remain available to the TPX Network."
+    wire:loading.attr="disabled"
+    class="cursor-pointer border-0 bg-transparent p-0 text-[10px] font-semibold text-amber-600 hover:text-amber-800 hover:underline disabled:cursor-wait disabled:opacity-50"
+>
+    Pause
+</button>
+
+                                        @endif
 
                                         @if (
                                             $syndication->status !== 'active' &&
@@ -733,27 +763,30 @@ new class extends Component
                                             $property?->exchange_available &&
                                             $property?->status === 'active'
                                         )
+
                                             <button
                                                 type="button"
                                                 wire:click="reactivateSyndication({{ $syndication->id }})"
                                                 wire:loading.attr="disabled"
-                                                class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-50"
+                                                class="text-[10px] font-semibold text-emerald-600 hover:text-emerald-800 hover:underline disabled:cursor-wait disabled:opacity-50"
                                             >
                                                 Reactivate
                                             </button>
+
                                         @endif
 
-
                                         @if (Auth::user()->isPlatformAdmin() && $syndication->status !== 'revoked')
+
                                             <button
-                                                type="button"
-                                                wire:click="revokeSyndication({{ $syndication->id }})"
-                                                wire:confirm="Revoke this syndication? This is a central TPX administrative action."
-                                                wire:loading.attr="disabled"
-                                                class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-wait disabled:opacity-50"
-                                            >
-                                                Revoke
-                                            </button>
+    type="button"
+    wire:click="revokeSyndication({{ $syndication->id }})"
+    wire:confirm="Revoke this syndication? This is a central TPX administrative action."
+    wire:loading.attr="disabled"
+    class="cursor-pointer border-0 bg-transparent p-0 text-[10px] font-semibold text-red-600 hover:text-red-800 hover:underline disabled:cursor-wait disabled:opacity-50"
+>
+    Revoke
+</button>
+
                                         @endif
 
                                     </div>
@@ -765,7 +798,9 @@ new class extends Component
                         @empty
 
                             <tr>
-                                <td colspan="6" class="px-6 py-14 text-center">
+
+                                <td colspan="6" class="px-6 py-12 text-center">
+
                                     <p class="font-semibold text-slate-700">
                                         No syndication records found.
                                     </p>
@@ -773,7 +808,9 @@ new class extends Component
                                     <p class="mt-1 text-sm text-slate-500">
                                         Syndications will appear here when an agency adds a TPX Network property to its website.
                                     </p>
+
                                 </td>
+
                             </tr>
 
                         @endforelse
@@ -783,13 +820,40 @@ new class extends Component
                 </table>
 
             </div>
+            <div class="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
 
+                <div class="flex items-center gap-2 text-[11px] text-slate-500">
 
-            @if ($syndications->hasPages())
-                <div class="border-t border-slate-200 px-6 py-4">
-                    {{ $syndications->links() }}
+                    <span>Show</span>
+
+                    <select
+                        wire:model.live="perPage"
+                        class="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-200"
+                    >
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+
+                    <span>syndications per page</span>
+
                 </div>
-            @endif
+
+                @if ($syndications->hasPages())
+
+                    <div>
+                        {{ $syndications->links() }}
+                    </div>
+
+                @else
+
+                    <div class="text-[11px] text-slate-400">
+                        Showing {{ $syndications->count() }} syndication{{ $syndications->count() === 1 ? '' : 's' }}
+                    </div>
+
+                @endif
+
+            </div>
 
         </section>
 

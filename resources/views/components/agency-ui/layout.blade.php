@@ -1,4 +1,4 @@
-﻿<div class="min-h-screen bg-slate-50">
+<div class="min-h-screen bg-slate-50">
     <div class="flex min-h-screen">
 
         {{-- Agency Sidebar --}}
@@ -53,19 +53,19 @@
                 </a>
 
                 <a
-                    href="#"
-                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-900 hover:text-white"
-                >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z"/>
-                    </svg>
+    href="{{ route('agency.properties') }}"
+    class="flex items-center gap-3 px-4 py-3 rounded-xl transition {{ request()->routeIs('agency.properties') ? 'bg-slate-900 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
+>
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z"/>
+    </svg>
 
-                    My Properties
-                </a>
+    My Properties
+</a>
 
                 <a
-                    href="#"
-                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-900 hover:text-white"
+                    href="{{ route('agency.property-network') }}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl transition {{ request()->routeIs('agency.property-network') ? 'bg-slate-900 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
                 >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h11l-3-3m3 3-3 3M17 17H6l3 3m-3-3 3-3"/>
@@ -75,14 +75,25 @@
                 </a>
 
                 <a
-                    href="#"
-                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-900 hover:text-white"
+                    href="{{ route('agency.received-properties') }}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl transition {{ request()->routeIs('agency.received-properties') ? 'bg-slate-900 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
                 >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h11l-3-3m3 3-3 3M16 17H5l3 3m-3-3 3-3"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>
                     </svg>
 
-                    My Syndications
+                    Received Properties
+                </a>
+
+                <a
+                    href="{{ route('agency.shared-properties') }}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl transition {{ request()->routeIs('agency.shared-properties') ? 'bg-slate-900 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h10m0 0-3-3m3 3-3 3M17 17H7m0 0 3-3m-3 3 3 3"/>
+                    </svg>
+
+                    Shared Properties
                 </a>
 
                 <div class="pt-5 mt-5 border-t border-slate-800">
@@ -93,14 +104,25 @@
 
                     @if(auth()->user()->isAgencyAdmin())
                         <a
-                            href="#"
-                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-900 hover:text-white"
+                            href="{{ route('agency.team-agents') }}"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl transition {{ request()->routeIs('agency.team-agents') ? 'bg-slate-900 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
                         >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87"/>
                             </svg>
 
                             Team & Agents
+                        </a>
+
+                        <a
+                            href="{{ route('agency.agency-directory') }}"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl transition {{ request()->routeIs('agency.agency-directory') ? 'bg-slate-900 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V5h14v16M8 8h2m4 0h2M8 12h2m4 0h2M8 16h2m4 0h2"/>
+                            </svg>
+
+                            Agency Directory
                         </a>
 
                         <a
@@ -126,7 +148,7 @@
                         </a>
 
                         <a
-                            href="#"
+                            href="{{ route('agency.connector-api') }}"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-900 hover:text-white"
                         >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -138,7 +160,7 @@
                     @endif
 
                     <a
-                        href="#"
+                        href="{{ route('agency.my-account') }}"
                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-900 hover:text-white"
                     >
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -165,12 +187,16 @@
                         {{ auth()->user()->isAgencyAdmin() ? 'Agency Administrator' : 'Agent' }}
                     </p>
 
-                    <button
-                        wire:click="logout"
-                        class="mt-4 w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition"
-                    >
-                        Sign out
-                    </button>
+                    <form method="POST" action="{{ route('logout') }}" class="mt-4">
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition"
+                        >
+                            Sign out
+                        </button>
+                    </form>
 
                 </div>
 
@@ -236,5 +262,6 @@
 
     </div>
 </div>
+
 
 

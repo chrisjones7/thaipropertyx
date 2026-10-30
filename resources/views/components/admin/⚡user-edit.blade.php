@@ -15,6 +15,8 @@ new class extends Component
     public ?int $agency_id = null;
     public string $role = 'agent';
     public string $status = 'active';
+    public string $newPassword = '';
+    public string $newPasswordConfirmation = '';
 
     public function mount(User $user): void
     {
@@ -70,6 +72,18 @@ new class extends Component
                     'disabled',
                 ]),
             ],
+            'newPassword' => [
+                'nullable',
+                'string',
+                'min:8',
+                'same:newPasswordConfirmation',
+            ],
+
+            'newPasswordConfirmation' => [
+                'nullable',
+                'string',
+                'min:8',
+            ],
         ];
 
         if (!$isPlatformAdmin) {
@@ -101,6 +115,9 @@ new class extends Component
             $data['role'] = $validated['role'];
         }
 
+        if (!empty($validated['newPassword'])) {
+            $data['password'] = $validated['newPassword'];
+        }
         $this->user->update($data);
 
         session()->flash(
@@ -301,10 +318,51 @@ new class extends Component
                                 </h4>
 
                                 <p class="mt-2 text-sm leading-6 text-slate-500">
-                                    Passwords are stored securely and cannot be viewed
-                                    from the administration area. Password changes will
-                                    be handled through the secure password-reset system.
+                                    Passwords are stored securely and cannot be viewed.
+                                    Leave both fields blank to keep the existing password.
                                 </p>
+
+                                <div class="mt-5 grid gap-4 sm:grid-cols-2">
+
+                                    <div>
+                                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                            New Password
+                                        </label>
+
+                                        <input
+                                            type="password"
+                                            wire:model="newPassword"
+                                            autocomplete="new-password"
+                                            class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                                        >
+
+                                        @error('newPassword')
+                                            <p class="mt-2 text-xs font-medium text-red-600">
+                                                {{ $message }}
+                                            </p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                            Confirm New Password
+                                        </label>
+
+                                        <input
+                                            type="password"
+                                            wire:model="newPasswordConfirmation"
+                                            autocomplete="new-password"
+                                            class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                                        >
+
+                                        @error('newPasswordConfirmation')
+                                            <p class="mt-2 text-xs font-medium text-red-600">
+                                                {{ $message }}
+                                            </p>
+                                        @enderror
+                                    </div>
+
+                                </div>
 
                             </div>
 

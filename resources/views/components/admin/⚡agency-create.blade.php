@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Agency;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -27,6 +28,15 @@ new class extends Component
 
     public string $status = 'pending';
     public bool $verified = false;
+    public bool $createAdministrator = false;
+
+    public string $adminName = '';
+
+    public string $adminEmail = '';
+
+    public string $adminPassword = '';
+
+    public string $adminPasswordConfirmation = '';
 
     public function mount(): void
     {
@@ -74,6 +84,36 @@ new class extends Component
             'verified' => ['boolean'],
         ]);
 
+        if ($this->createAdministrator) {
+            $adminValidated = $this->validate([
+                'adminName' => [
+                    'required',
+                    'string',
+                    'max:255',
+                ],
+
+                'adminEmail' => [
+                    'required',
+                    'email',
+                    'max:255',
+                    Rule::unique('users', 'email'),
+                ],
+
+                'adminPassword' => [
+                    'required',
+                    'string',
+                    'min:8',
+                    'same:adminPasswordConfirmation',
+                ],
+
+                'adminPasswordConfirmation' => [
+                    'required',
+                    'string',
+                    'min:8',
+                ],
+            ]);
+        }
+
         $slugBase = Str::slug($validated['name']);
         $slug = $slugBase;
         $counter = 2;
@@ -89,7 +129,18 @@ new class extends Component
             ? now()
             : null;
 
-        Agency::create($validated);
+        $agency = Agency::create($validated);
+
+        if ($this->createAdministrator) {
+            User::create([
+                'name' => $adminValidated['adminName'],
+                'email' => strtolower($adminValidated['adminEmail']),
+                'password' => $adminValidated['adminPassword'],
+                'agency_id' => $agency->id,
+                'role' => 'agency_admin',
+                'status' => 'active',
+            ]);
+        }
 
         session()->flash(
             'success',
@@ -433,7 +484,121 @@ new class extends Component
                 {{-- Right column --}}
                 <div class="space-y-8">
 
-                    {{-- Account status --}}
+                    {{-- AGENCY ADMINISTRATOR --}}
+                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div class="border-b border-slate-200 px-6 py-5">
+                        <h4 class="font-semibold text-slate-900">
+                            Agency Administrator Account
+                        </h4>
+
+                        <p class="mt-1 text-sm text-slate-500">
+                            Optionally create the first administrator login for this agency.
+                        </p>
+                    </div>
+
+                    <div class="space-y-5 p-6">
+
+                        <label class="flex cursor-pointer items-start gap-3">
+                            <input
+                                type="checkbox"
+                                wire:model.live="createAdministrator"
+                                class="mt-1 h-4 w-4 rounded border-slate-300"
+                            >
+
+                            <span>
+                                <span class="block text-sm font-semibold text-slate-800">
+                                    Create Agency Administrator
+                                </span>
+
+                                <span class="mt-1 block text-xs leading-5 text-slate-500">
+                                    Create an active Agency Administrator account when this agency is created.
+                                </span>
+                            </span>
+                        </label>
+
+                        @if ($createAdministrator)
+
+                            <div class="border-t border-slate-100 pt-5">
+
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Administrator Name
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        wire:model="adminName"
+                                        autocomplete="off"
+                                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                                    >
+
+                                    @error('adminName')
+                                        <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="mt-5">
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Login Email
+                                    </label>
+
+                                    <input
+                                        type="email"
+                                        wire:model="adminEmail"
+                                        autocomplete="off"
+                                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                                    >
+
+                                    @error('adminEmail')
+                                        <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="mt-5 grid gap-5 md:grid-cols-2">
+
+                                    <div>
+                                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                            Password
+                                        </label>
+
+                                        <input
+                                            type="password"
+                                            wire:model="adminPassword"
+                                            autocomplete="new-password"
+                                            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                                        >
+
+                                        @error('adminPassword')
+                                            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                            Confirm Password
+                                        </label>
+
+                                        <input
+                                            type="password"
+                                            wire:model="adminPasswordConfirmation"
+                                            autocomplete="new-password"
+                                            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                                        >
+
+                                        @error('adminPasswordConfirmation')
+                                            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        @endif
+
+                    </div>
+                </section>
+                {{-- Account status --}}
                     <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
                         <div class="border-b border-slate-200 px-6 py-6">

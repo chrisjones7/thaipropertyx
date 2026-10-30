@@ -16,6 +16,7 @@ new class extends Component
     public string $listingType = '';
     public string $province = '';
     public string $agencyId = '';
+    public int $perPage = 25;
 
     public function mount(): void
     {
@@ -57,6 +58,15 @@ new class extends Component
 
     public function updatedAgencyId(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        if (!in_array($this->perPage, [25, 50, 100], true)) {
+            $this->perPage = 25;
+        }
+
         $this->resetPage();
     }
 
@@ -156,7 +166,7 @@ new class extends Component
         return [
             'properties' => $query
                 ->latest()
-                ->paginate(20),
+                ->paginate($this->perPage),
 
             'agencies' => Agency::query()
                 ->orderBy('name')
@@ -408,80 +418,93 @@ new class extends Component
         {{-- INVENTORY --}}
         <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-            <div class="border-b border-slate-200 px-6 py-5">
-                <h4 class="text-lg font-semibold text-slate-900">
-                    Property Inventory
-                </h4>
+            <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-3">
+                <div>
+                    <h4 class="text-base font-semibold text-slate-900">
+                        Property Inventory
+                    </h4>
 
-                <p class="mt-1 text-sm text-slate-500">
-                    Central inventory available within the ThaiPropertyX platform.
-                </p>
+                    <p class="mt-0.5 text-xs text-slate-500">
+                        Central inventory available within the ThaiPropertyX platform.
+                    </p>
+                </div>
+
+                <div class="text-xs font-medium text-slate-500">
+                    {{ $properties->total() }} properties
+                </div>
             </div>
-
 
             <div class="overflow-x-auto">
 
-                <table class="w-full divide-y divide-slate-200" style="width: 100%;">
+                <table class="w-full min-w-[1180px] divide-y divide-slate-200">
 
                     <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr style="border-bottom: 1px solid #e2e8f0 !important;">
+                            <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                 Property
                             </th>
 
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                 Agency
                             </th>
 
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                 Location
                             </th>
 
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                 Price
                             </th>
 
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                 Status
                             </th>
 
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Exchange
+                            <th class="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                Network
                             </th>
 
-                            <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <th class="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                Synd.
+                            </th>
+
+                            <th class="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                Media
+                            </th>
+
+                            <th class="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                 Action
                             </th>
                         </tr>
                     </thead>
 
-
-                    <tbody class="divide-y divide-slate-200 bg-white">
+                    <tbody class="divide-y divide-gray-200 bg-white">
 
                         @forelse ($properties as $property)
 
-                            <tr class="transition hover:bg-slate-50">
+                            <tr style="border-bottom: 1px solid #e2e8f0 !important;" class="border-b border-gray-200 transition hover:bg-slate-50">
 
                                 {{-- PROPERTY --}}
-                                <td class="px-6 py-5">
+                                <td class="px-3 py-2">
+                                    <div class="flex min-w-[260px] items-center gap-3">
 
-                                    <div
-    class="shrink-0 overflow-hidden rounded-xl bg-slate-100"
-    style="width: 96px; height: 80px;"
->
-    @if ($property->primaryImage)
+                                        <div
+                                            class="shrink-0 overflow-hidden rounded-lg bg-slate-100"
+                                            style="width: 40px; height: 40px;"
+                                        >
+                                            @if ($property->primaryImage)
 
-        <img
-            src="{{ asset(ltrim($property->primaryImage->thumbnail_url ?: $property->primaryImage->url, '/')) }}"
-            alt="{{ $property->primaryImage->alt_text ?: $property->title }}"
-            style="width: 96px; height: 80px; object-fit: cover; display: block;"
-        >
+                                                <img
+                                                    src="{{ asset(ltrim($property->primaryImage->thumbnail_url ?: $property->primaryImage->url, '/')) }}"
+                                                    alt="{{ $property->primaryImage->alt_text ?: $property->title }}"
+                                                    style="width: 40px; height: 40px; object-fit: cover; display: block;"
+                                                >
 
                                             @else
 
                                                 <div class="flex h-full w-full items-center justify-center text-slate-400">
                                                     <svg
-                                                        class="h-6 w-6"
+                                                        class="h-4 w-4"
                                                         fill="none"
                                                         stroke="currentColor"
                                                         stroke-width="2"
@@ -496,92 +519,74 @@ new class extends Component
                                                 </div>
 
                                             @endif
-
                                         </div>
 
-
-                                        <div>
-                                            <p class="font-semibold text-slate-900">
+                                        <div class="min-w-0">
+                                            <p class="max-w-[250px] truncate text-sm font-semibold leading-5 text-slate-900">
                                                 {{ $property->title }}
                                             </p>
 
-                                            <div class="mt-1 flex flex-wrap gap-x-2 text-sm text-slate-500">
-
-                                                <span>
-                                                    {{ ucfirst($property->property_type) }}
-                                                </span>
+                                            <p class="max-w-[250px] truncate text-[9px] leading-4 text-slate-500">
+                                                {{ $property->reference ?: 'No ref' }}
+                                                · {{ ucfirst($property->property_type) }}
 
                                                 @if (!is_null($property->bedrooms))
-                                                    <span>
-                                                        · {{ $property->bedrooms }} bed
-                                                    </span>
+                                                    · {{ $property->bedrooms }}bd
                                                 @endif
 
                                                 @if (!is_null($property->bathrooms))
-                                                    <span>
-                                                        · {{ $property->bathrooms }} bath
-                                                    </span>
+                                                    · {{ $property->bathrooms }}ba
                                                 @endif
-
-                                            </div>
-
-                                            @if ($property->reference)
-                                                <p class="mt-1 text-xs text-slate-400">
-                                                    Ref: {{ $property->reference }}
-                                                </p>
-                                            @endif
+                                            </p>
                                         </div>
 
                                     </div>
-
                                 </td>
-
 
                                 {{-- AGENCY --}}
-                                <td class="px-6 py-5 text-sm font-medium text-slate-700">
-                                    {{ $property->agency?->name ?: '—' }}
+                                <td class="max-w-[180px] px-3 py-2 text-xs font-medium text-slate-700">
+                                    <div class="truncate">
+                                        {{ $property->agency?->name ?: '—' }}
+                                    </div>
                                 </td>
 
-
                                 {{-- LOCATION --}}
-                                <td class="px-6 py-5">
-
-                                    <p class="text-sm font-medium text-slate-700">
+                                <td class="px-3 py-2">
+                                    <p class="text-xs font-medium leading-4 text-slate-700">
                                         {{ $property->district ?: '—' }}
                                     </p>
 
-                                    <p class="mt-1 text-sm text-slate-400">
-                                        {{ $property->province ?: '—' }}
-                                    </p>
-
+                                    @if ($property->province)
+                                        <p class="text-[11px] leading-4 text-slate-400">
+                                            {{ $property->province }}
+                                        </p>
+                                    @endif
                                 </td>
 
-
                                 {{-- PRICE --}}
-                                <td class="px-6 py-5">
+                                <td class="whitespace-nowrap px-3 py-2">
 
                                     @if ($property->for_sale && $property->sale_price !== null)
 
-                                        <p class="font-bold text-slate-900">
+                                        <p class="text-xs font-bold leading-4 text-slate-900">
                                             {{ $property->currency }}
                                             {{ number_format((float) $property->sale_price, 0) }}
                                         </p>
 
-                                        <p class="mt-1 text-xs font-medium text-amber-600">
+                                        <p class="text-[10px] font-semibold leading-4 text-amber-600">
                                             For Sale
                                         </p>
 
                                     @endif
 
-
                                     @if ($property->for_rent && $property->rental_price !== null)
 
-                                        <p class="{{ $property->for_sale ? 'mt-2' : '' }} font-bold text-slate-900">
+                                        <p class="text-xs font-bold leading-4 text-slate-900">
                                             {{ $property->currency }}
                                             {{ number_format((float) $property->rental_price, 0) }}
                                         </p>
 
-                                        <p class="mt-1 text-xs font-medium text-sky-600">
+                                        <p class="text-[10px] font-semibold leading-4 text-sky-600">
                                             For Rent
                                             @if ($property->rental_period)
                                                 / {{ $property->rental_period }}
@@ -592,9 +597,8 @@ new class extends Component
 
                                 </td>
 
-
                                 {{-- STATUS --}}
-                                <td class="px-6 py-5">
+                                <td class="px-3 py-2">
 
                                     @php
                                         $statusClasses = match ($property->status) {
@@ -618,77 +622,66 @@ new class extends Component
                                     @endphp
 
                                     <span
-                                        class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClasses }}"
+                                        class="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset {{ $statusClasses }}"
                                     >
                                         {{ ucfirst($property->status) }}
                                     </span>
 
                                 </td>
 
-
-                                {{-- EXCHANGE --}}
-                                <td class="px-6 py-5">
+                                {{-- NETWORK --}}
+                                <td class="px-3 py-2">
 
                                     @if ($property->exchange_available)
-                                        <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                                            Available to Network
+
+                                        <span class="inline-flex whitespace-nowrap rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                                            Available
                                         </span>
+
                                     @else
-                                        <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
+
+                                        <span class="inline-flex whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
                                             Private
                                         </span>
+
                                     @endif
-
-                                    <p class="mt-2 text-sm font-semibold text-slate-700">
-                                        {{ $property->syndications_count }}
-                                        {{ Str::plural('syndication', $property->syndications_count) }}
-                                    </p>
-
-                                    <p class="mt-1 text-xs text-slate-400">
-                                        {{ $property->media_count }}
-                                        {{ Str::plural('media item', $property->media_count) }}
-                                    </p>
 
                                 </td>
 
+                                {{-- SYNDICATIONS --}}
+                                <td class="px-3 py-2 text-center text-xs font-semibold text-slate-700">
+                                    {{ $property->syndications_count }}
+                                </td>
+
+                                {{-- MEDIA --}}
+                                <td class="px-3 py-2 text-center text-xs font-semibold text-slate-700">
+                                    {{ $property->media_count }}
+                                </td>
 
                                 {{-- ACTION --}}
-                                <td class="px-6 py-5 text-right">
+                                <td class="whitespace-nowrap px-3 py-2 text-right">
 
-                                    <div class="flex items-center justify-end gap-2">
+                                    <a
+                                        href="{{ route('admin.properties.edit', $property) }}"
+                                        wire:navigate
+                                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                                    >
+                                        Manage
 
-                                        <a
-                                            href="{{ route('admin.properties.edit', $property) }}"
-                                            wire:navigate
-                                            class="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                                        <svg
+                                            class="h-3.5 w-3.5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            viewBox="0 0 24 24"
                                         >
-                                            Manage
-
-                                            <svg
-                                                class="h-4 w-4"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                stroke-width="2"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    d="m9 18 6-6-6-6"
-                                                />
-                                            </svg>
-                                        </a>
-
-                                        <button
-                                            type="button"
-                                            wire:click="deleteProperty({{ $property->id }})"
-                                            wire:confirm="Delete this property permanently? This will also remove its uploaded images."
-                                            class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
-                                        >
-                                            Delete
-                                        </button>
-
-                                    </div>
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="m9 18 6-6-6-6"
+                                            />
+                                        </svg>
+                                    </a>
 
                                 </td>
 
@@ -696,11 +689,9 @@ new class extends Component
 
                         @empty
 
-                            <tr>
-                                <td
-                                    colspan="7"
-                                    class="px-6 py-14 text-center"
-                                >
+                            <tr style="border-bottom: 1px solid #e2e8f0 !important;">
+                                <td colspan="9" class="px-6 py-12 text-center">
+
                                     <p class="font-semibold text-slate-700">
                                         No properties found.
                                     </p>
@@ -708,6 +699,7 @@ new class extends Component
                                     <p class="mt-1 text-sm text-slate-500">
                                         Add a property or adjust the filters.
                                     </p>
+
                                 </td>
                             </tr>
 
@@ -719,15 +711,48 @@ new class extends Component
 
             </div>
 
+            <div class="flex items-center justify-between gap-4 border-t border-slate-200 px-5 py-3">
 
-            @if ($properties->hasPages())
-                <div class="border-t border-slate-200 px-6 py-4">
-                    {{ $properties->links() }}
+                <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <span>Show</span>
+
+                    <select
+                        wire:model.live="perPage"
+                        class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 focus:border-amber-400 focus:ring-amber-400"
+                    >
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+
+                    <span>properties per page</span>
                 </div>
-            @endif
+
+                <p class="text-xs text-slate-500">
+                    Showing
+                    <span class="font-semibold text-slate-700">
+                        {{ $properties->firstItem() ?? 0 }}
+                    </span>
+                    to
+                    <span class="font-semibold text-slate-700">
+                        {{ $properties->lastItem() ?? 0 }}
+                    </span>
+                    of
+                    <span class="font-semibold text-slate-700">
+                        {{ $properties->total() }}
+                    </span>
+                    properties
+                </p>
+
+                @if ($properties->hasPages())
+                    <div>
+                        {{ $properties->links() }}
+                    </div>
+                @endif
+
+            </div>
 
         </section>
 
     </div>
-
 </x-admin-ui.layout>

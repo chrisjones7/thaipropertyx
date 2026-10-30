@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Models\Agency;
 use App\Models\Property;
@@ -86,10 +86,20 @@ new class extends Component
 
     public function mount(): void
     {
+        abort_unless(Auth::check(), 403);
+
+        $user = Auth::user();
+
         abort_unless(
-            Auth::check() && Auth::user()->isPlatformAdmin(),
+            $user->isPlatformAdmin() || $user->isAgencyAdmin() || $user->isAgent(),
             403
         );
+
+        if ($user->isAgencyAdmin() || $user->isAgent()) {
+            abort_unless($user->agency_id, 403);
+
+            $this->agency_id = (int) $user->agency_id;
+        }
     }
 
 
@@ -106,11 +116,19 @@ new class extends Component
 
     public function save(): void
     {
+        if (Auth::user()->isAgencyAdmin() || Auth::user()->isAgent()) {
+
+
+            $this->agency_id = (int) Auth::user()->agency_id;
+        }
+
         if (!$this->for_sale && !$this->for_rent) {
             throw ValidationException::withMessages([
                 'for_sale' => 'Select at least one listing option: For Sale or For Rent.',
             ]);
         }
+
+
 
         $validated = $this->validate([
             'agency_id' => [
@@ -118,7 +136,6 @@ new class extends Component
                 'integer',
                 Rule::exists('agencies', 'id'),
             ],
-
             'reference' => [
                 'nullable',
                 'string',
@@ -381,6 +398,13 @@ new class extends Component
                 'max:15360',
             ],
         ]);
+        \Log::info('PROPERTY CREATE VALIDATION PASSED', [
+            'user_id' => Auth::id(),
+            'agency_id' => $this->agency_id,
+            'title' => $validated['title'] ?? null,
+        ]);
+
+
 
 
         /*
@@ -680,6 +704,11 @@ new class extends Component
                     'media_type' => 'image',
                     'url' => '/storage/' . $path,
                     'thumbnail_url' => $thumbnailUrl,
+                    ...PropertyMedia::storageMetadata(
+                        'public',
+                        $path,
+                        'image'
+                    ),
                     'title' => null,
                     'alt_text' => $property->title,
                     'sort_order' => $index,
@@ -695,7 +724,9 @@ new class extends Component
         );
 
         $this->redirect(
-            '/admin/properties',
+            Auth::user()->isPlatformAdmin()
+                ? route('admin.properties')
+                : route('agency.properties'),
             navigate: true
         );
     }
@@ -823,7 +854,7 @@ new class extends Component
         {{-- BACK --}}
         <div class="mb-5">
             <a
-                href="{{ route('admin.properties') }}"
+                href="{{ Auth::user()->isPlatformAdmin() ? route('admin.properties') : route('agency.properties') }}"
                 wire:navigate
                 class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-slate-900"
             >
@@ -863,7 +894,74 @@ new class extends Component
         </div>
 
 
-        <form wire:submit="save" class="space-y-6">
+
+        @if (session('success'))
+            <div class="mb-6 flex items-start gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"/>
+                    </svg>
+                </div>
+
+                <div class="flex-1">
+                    <p class="font-bold text-emerald-800">
+                        Property Created Successfully
+                    </p>
+                    <p class="mt-1 text-sm text-emerald-700">
+                        {{ session('success') }}
+                    </p>
+                </div>
+            </div>
+        @endif
+
+        @if ($errors->any())
+    <div id="property-create-error" tabindex="-1" class="mb-6 rounded-2xl border-2 border-red-300 bg-red-50 p-6 shadow-sm">
+        <div class="flex items-start gap-4">
+
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <svg
+                    class="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
+                    />
+                </svg>
+            </div>
+
+            <div class="min-w-0">
+                <h4 class="text-lg font-bold text-red-800">
+                    Property Not Added
+                </h4>
+
+                <p class="mt-1 text-sm font-medium text-red-700">
+                    Please correct the following before saving the property:
+                </p>
+
+                <ul class="mt-3 list-disc space-y-1 pl-5 text-sm font-semibold text-red-700">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+
+        </div>
+    </div>
+@endif
+
+<form wire:submit="save" class="space-y-6">
 
             {{-- PROPERTY OWNERSHIP --}}
             <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -883,23 +981,29 @@ new class extends Component
                     <div>
                         <label class="mb-2 block text-sm font-semibold text-slate-700">
                             Owning Agency
-                            <span class="text-red-500">*</span>
+                            <span class="font-bold text-red-600">(required)</span>
                         </label>
 
-                        <select
-                            wire:model="agency_id"
-                            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm"
-                        >
-                            <option value="">
-                                Select agency
-                            </option>
-
-                            @foreach ($agencies as $agency)
-                                <option value="{{ $agency->id }}">
-                                    {{ $agency->name }}
+                        @if (Auth::user()->isPlatformAdmin())
+                            <select
+                                wire:model="agency_id"
+                                class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm"
+                            >
+                                <option value="">
+                                    Select agency
                                 </option>
-                            @endforeach
-                        </select>
+
+                                @foreach ($agencies as $agency)
+                                    <option value="{{ $agency->id }}">
+                                        {{ $agency->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        @else
+                            <div class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                                {{ Auth::user()->agency?->name }}
+                            </div>
+                        @endif
 
                         @error('agency_id')
                             <p class="mt-2 text-sm font-medium text-red-600">
@@ -950,7 +1054,7 @@ new class extends Component
                     <div>
                         <label class="mb-2 block text-sm font-semibold text-slate-700">
                             Property Title
-                            <span class="text-red-500">*</span>
+                            <span class="font-bold text-red-600">(required)</span>
                         </label>
 
                         <input
@@ -973,7 +1077,7 @@ new class extends Component
                         <div>
                             <label class="mb-2 block text-sm font-semibold text-slate-700">
                                 Property Type
-                                <span class="text-red-500">*</span>
+                                <span class="font-bold text-red-600">(required)</span>
                             </label>
 
                             <select
@@ -1094,17 +1198,17 @@ new class extends Component
                         @if ($for_sale)
                             <div>
                                 <label class="mb-2 block text-sm font-semibold text-slate-700">
-                                    Sale Price
-                                    <span class="text-red-500">*</span>
+                                    Sale Price <span class="font-bold text-red-600">(required)</span>
                                 </label>
 
                                 <input
-                                    wire:model="sale_price"
-                                    type="number"
+                                    class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                                    type="text"
                                     min="0"
                                     step="0.01"
+                                    wire:model="sale_price"
                                     placeholder="6500000"
-                                    class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                                    inputmode="decimal"
                                 >
 
                                 @error('sale_price')
@@ -1119,17 +1223,17 @@ new class extends Component
                         @if ($for_rent)
                             <div>
                                 <label class="mb-2 block text-sm font-semibold text-slate-700">
-                                    Rental Price
-                                    <span class="text-red-500">*</span>
+                                    Rental Price <span class="font-bold text-red-600">(required)</span>
                                 </label>
 
                                 <input
-                                    wire:model="rental_price"
-                                    type="number"
+                                    class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                                    type="text"
                                     min="0"
                                     step="0.01"
+                                    wire:model="rental_price"
                                     placeholder="35000"
-                                    class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                                    inputmode="decimal"
                                 >
 
                                 @error('rental_price')
@@ -1449,16 +1553,23 @@ new class extends Component
                 </div>
 
 
-                <div class="space-y-7 p-6">
+                <div class="space-y-3 p-6">
 
                     @foreach ($featureGroups as $category => $features)
 
-                        <div>
-                            <h5 class="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">
-                                {{ $category }}
-                            </h5>
+                        <details class="overflow-hidden rounded-xl border border-slate-200 bg-white" @if($loop->first) open @endif>
 
-                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-bold uppercase tracking-wide text-slate-700 hover:bg-slate-50">
+
+                                <span>{{ $category }}</span>
+
+                                <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"></path>
+                                </svg>
+
+                            </summary>
+
+                            <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
 
                                 @foreach ($features as $feature)
 
@@ -1480,7 +1591,8 @@ new class extends Component
                                 @endforeach
 
                             </div>
-                        </div>
+
+                        </details>
 
                     @endforeach
 
@@ -1630,7 +1742,7 @@ new class extends Component
 
                     <div>
                         <label class="mb-2 block text-sm font-semibold text-slate-700">
-                            Subdistrict
+                            Area
                         </label>
 
                         <input
@@ -1644,7 +1756,7 @@ new class extends Component
 
                     <div>
                         <label class="mb-2 block text-sm font-semibold text-slate-700">
-                            District
+                            City
                         </label>
 
                         <input
@@ -1659,7 +1771,7 @@ new class extends Component
                     <div>
                         <label class="mb-2 block text-sm font-semibold text-slate-700">
                             Province
-                            <span class="text-red-500">*</span>
+                            <span class="font-bold text-red-600">(required)</span>
                         </label>
 
                         <input
@@ -2164,10 +2276,10 @@ new class extends Component
 
 
             {{-- ACTION BAR --}}
-            <div class="flex flex-col-reverse gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
 
                 <a
-                    href="{{ route('admin.properties') }}"
+                    href="{{ Auth::user()->isPlatformAdmin() ? route('admin.properties') : route('agency.properties') }}"
                     wire:navigate
                     class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
@@ -2175,58 +2287,71 @@ new class extends Component
                 </a>
 
 
-                <button
-                    type="submit"
-                    wire:loading.attr="disabled"
-                    wire:target="save"
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
-                >
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
 
-                    <svg
-                        wire:loading.remove
+                    @if ($errors->any())
+                        <div class="w-full rounded-xl border-2 border-red-300 bg-red-50 px-5 py-3 text-sm text-red-800 shadow-sm sm:max-w-xl">
+                            <p class="font-bold text-red-700">Property Not Added</p>
+                            <p class="mt-1 font-medium">Please correct the following before saving:</p>
+                            <ul class="mt-2 list-disc space-y-1 pl-5 font-medium">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <button
+                        type="submit"
+                        wire:loading.attr="disabled"
                         wire:target="save"
-                        class="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        viewBox="0 0 24 24"
+                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="m5 12 4 4L19 6"
-                        />
-                    </svg>
 
-
-                    <svg
-                        wire:loading
-                        wire:target="save"
-                        class="h-5 w-5 animate-spin"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <circle
-                            class="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
+                        <svg
+                            wire:loading.remove
+                            wire:target="save"
+                            class="h-5 w-5"
+                            fill="none"
                             stroke="currentColor"
-                            stroke-width="4"
-                        />
+                            stroke-width="2"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="m5 12 4 4L19 6"
+                            />
+                        </svg>
 
-                        <path
-                            class="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
-                        />
-                    </svg>
+                        <svg
+                            wire:loading
+                            wire:target="save"
+                            class="h-5 w-5 animate-spin"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            />
 
-                    Add Property
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
+                            />
+                        </svg>
 
-                </button>
+                        Add Property
 
-            </div>
+                    </button>
+
+                </div>
 
         </form>
 
@@ -2784,5 +2909,49 @@ new class extends Component
             }
         );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Scroll to Validation Error
+        |--------------------------------------------------------------------------
+        */
+
+        function scrollToPropertyCreateError() {
+            const errorPanel = document.getElementById('property-create-error');
+
+            if (errorPanel) {
+                errorPanel.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+
+                errorPanel.focus({
+                    preventScroll: true
+                });
+            }
+        }
+
+        document.addEventListener('livewire:navigated', function () {
+            setTimeout(function () {
+                if (document.getElementById('property-create-error')) {
+                    scrollToPropertyCreateError();
+                }
+            }, 100);
+        });
+
+        document.addEventListener('livewire:init', function () {
+            Livewire.hook('morph.updated', function () {
+                const errorPanel = document.getElementById('property-create-error');
+
+                if (errorPanel) {
+                    setTimeout(scrollToPropertyCreateError, 50);
+                }
+            });
+        });
+
     })();
 </script>
+
+
+
+

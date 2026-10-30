@@ -58,7 +58,7 @@ class PropertyImageStorage
                 $manager = new ImageManager(new Driver());
 
                 $thumbnail = $manager
-                    ->read($image->getRealPath())
+                    ->decodePath($image->getRealPath())
                     ->scaleDown(width: 480, height: 360)
                     ->toJpeg(82);
 

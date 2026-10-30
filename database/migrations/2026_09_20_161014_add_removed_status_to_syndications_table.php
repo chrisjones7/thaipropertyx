@@ -8,7 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (DB::getDriverName() === 'pgsql') {
+        $driver = DB::getDriverName();
+
+        // SQLite does not support MODIFY or MySQL ENUM.
+        if ($driver === 'sqlite') {
+            return;
+        }
+
+        if ($driver === 'pgsql') {
             DB::statement("
                 ALTER TABLE syndications
                 DROP CONSTRAINT IF EXISTS syndications_status_check
@@ -30,22 +37,30 @@ return new class extends Migration
             return;
         }
 
-        DB::statement("
-            ALTER TABLE syndications
-            MODIFY status ENUM(
-                'pending',
-                'approved',
-                'active',
-                'paused',
-                'revoked',
-                'removed'
-            ) NOT NULL DEFAULT 'pending'
-        ");
+        if ($driver === 'mysql') {
+            DB::statement("
+                ALTER TABLE syndications
+                MODIFY status ENUM(
+                    'pending',
+                    'approved',
+                    'active',
+                    'paused',
+                    'revoked',
+                    'removed'
+                ) NOT NULL DEFAULT 'pending'
+            ");
+        }
     }
 
     public function down(): void
     {
-        if (DB::getDriverName() === 'pgsql') {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'sqlite') {
+            return;
+        }
+
+        if ($driver === 'pgsql') {
             DB::statement("
                 ALTER TABLE syndications
                 DROP CONSTRAINT IF EXISTS syndications_status_check
@@ -66,15 +81,17 @@ return new class extends Migration
             return;
         }
 
-        DB::statement("
-            ALTER TABLE syndications
-            MODIFY status ENUM(
-                'pending',
-                'approved',
-                'active',
-                'paused',
-                'revoked'
-            ) NOT NULL DEFAULT 'pending'
-        ");
+        if ($driver === 'mysql') {
+            DB::statement("
+                ALTER TABLE syndications
+                MODIFY status ENUM(
+                    'pending',
+                    'approved',
+                    'active',
+                    'paused',
+                    'revoked'
+                ) NOT NULL DEFAULT 'pending'
+            ");
+        }
     }
 };

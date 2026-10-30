@@ -8,7 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (DB::getDriverName() === 'pgsql') {
+        $driver = DB::getDriverName();
+
+        // SQLite does not support MODIFY or MySQL ENUM.
+        if ($driver === 'sqlite') {
+            return;
+        }
+
+        if ($driver === 'pgsql') {
             DB::statement("
                 ALTER TABLE properties
                 DROP CONSTRAINT IF EXISTS properties_status_check
@@ -32,24 +39,33 @@ return new class extends Migration
             return;
         }
 
-        DB::statement("
-            ALTER TABLE properties
-            MODIFY status ENUM(
-                'draft',
-                'pending',
-                'active',
-                'paused',
-                'sold',
-                'rented',
-                'withdrawn',
-                'expired'
-            ) NOT NULL DEFAULT 'draft'
-        ");
+        if ($driver === 'mysql') {
+            DB::statement("
+                ALTER TABLE properties
+                MODIFY status ENUM(
+                    'draft',
+                    'pending',
+                    'active',
+                    'paused',
+                    'sold',
+                    'rented',
+                    'withdrawn',
+                    'expired'
+                ) NOT NULL DEFAULT 'draft'
+            ");
+        }
     }
 
     public function down(): void
     {
-        if (DB::getDriverName() === 'pgsql') {
+        $driver = DB::getDriverName();
+
+        // SQLite does not support MODIFY or MySQL ENUM.
+        if ($driver === 'sqlite') {
+            return;
+        }
+
+        if ($driver === 'pgsql') {
             DB::statement("
                 ALTER TABLE properties
                 DROP CONSTRAINT IF EXISTS properties_status_check
@@ -72,17 +88,19 @@ return new class extends Migration
             return;
         }
 
-        DB::statement("
-            ALTER TABLE properties
-            MODIFY status ENUM(
-                'draft',
-                'pending',
-                'active',
-                'sold',
-                'rented',
-                'withdrawn',
-                'expired'
-            ) NOT NULL DEFAULT 'draft'
-        ");
+        if ($driver === 'mysql') {
+            DB::statement("
+                ALTER TABLE properties
+                MODIFY status ENUM(
+                    'draft',
+                    'pending',
+                    'active',
+                    'sold',
+                    'rented',
+                    'withdrawn',
+                    'expired'
+                ) NOT NULL DEFAULT 'draft'
+            ");
+        }
     }
 };

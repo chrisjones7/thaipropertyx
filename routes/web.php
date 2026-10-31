@@ -106,6 +106,10 @@ Route::livewire('/shared-properties', 'agency.syndications')
     ->middleware('auth')
     ->name('agency.shared-properties');
 
+Route::livewire('/notifications', 'agency.notifications')
+    ->middleware('auth')
+    ->name('agency.notifications');
+
 Route::livewire('/team-agents', 'agency.team-agents')
     ->middleware('auth')
     ->name('agency.team-agents');

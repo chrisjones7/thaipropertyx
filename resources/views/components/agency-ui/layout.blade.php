@@ -96,6 +96,17 @@
                     Shared Properties
                 </a>
 
+                {{-- Notifications --}}
+                <a
+                    href="{{ route('agency.notifications') }}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl transition {{ request()->routeIs('agency.notifications') ? 'bg-slate-900 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>
+                    </svg>
+                    <span class="flex-1">Notifications</span>
+                </a>
+
                 <div class="pt-5 mt-5 border-t border-slate-800">
 
                     <p class="px-4 mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">

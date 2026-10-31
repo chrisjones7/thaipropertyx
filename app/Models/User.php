@@ -61,4 +61,9 @@ class User extends Authenticatable
     {
         return $this->status === 'active';
     }
+
+    public function notificationPreferences()
+    {
+        return $this->hasMany(NotificationPreference::class);
+    }
 }

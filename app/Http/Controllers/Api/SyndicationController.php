@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\Syndication;
 use App\Models\TaxonomyMapping;
+use App\Models\User;
+use App\Notifications\PropertyImportedNotification;
+use App\Notifications\SyndicationCreatedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -61,9 +64,7 @@ class SyndicationController extends Controller
          * By default only active syndications are returned.
          *
          * The receiving connector can request status=all so that
-         * paused and revoked syndications are also returned. This
-         * allows the remote Houzez site to reliably unpublish
-         * listings when their TPX syndication state changes.
+         * paused and revoked syndications are also returned.
          */
         if ($status !== 'all') {
             $query->where('status', $status);
@@ -77,10 +78,6 @@ class SyndicationController extends Controller
         /*
          * Translate canonical TPX property types into the local
          * Houzez terminology used by the receiving agency.
-         *
-         * The canonical property_type is preserved. A separate
-         * houzez_property_type attribute is supplied for the
-         * receiving connector.
          */
         $propertyTypeMappings = TaxonomyMapping::query()
             ->where('agency_id', $targetAgency->id)
@@ -93,15 +90,7 @@ class SyndicationController extends Controller
 
         /*
          * Translate canonical TPX property features into the local
-         * Houzez feature terminology used by the receiving agency.
-         *
-         * Example:
-         *
-         * TPX canonical feature: fitness-gym
-         * Receiving Houzez feature: gym
-         *
-         * If no agency-specific mapping exists, the canonical TPX
-         * feature slug is used as the fallback.
+         * Houzez terminology used by the receiving agency.
          */
         $propertyFeatureMappings = TaxonomyMapping::query()
             ->where('agency_id', $targetAgency->id)
@@ -140,9 +129,8 @@ class SyndicationController extends Controller
                 /*
                  * Property feature mappings.
                  *
-                 * We keep the original canonical features relation
-                 * untouched and provide a separate array containing
-                 * the Houzez feature slugs for the receiving site.
+                 * Preserve the original canonical features and
+                 * provide a separate array of Houzez feature slugs.
                  */
                 $houzezPropertyFeatures = $syndication->property
                     ->features
@@ -215,9 +203,6 @@ class SyndicationController extends Controller
          *
          * The database has a unique constraint on
          * property_id + target_agency_id.
-         *
-         * We must reactivate an existing revoked record
-         * rather than creating a duplicate.
          */
         $existing = Syndication::where('property_id', $property->id)
             ->where('target_agency_id', $targetAgency->id)
@@ -264,11 +249,8 @@ class SyndicationController extends Controller
         }
 
         /*
-         * For the pilot system, selecting an Exchange property
-         * immediately creates an active syndication.
-         *
-         * We retain the approval fields so that a future workflow
-         * can require owner approval if desired.
+         * Selecting an Exchange property immediately creates
+         * an active syndication for the pilot system.
          */
         $syndication = Syndication::create([
             'property_id' => $property->id,
@@ -284,6 +266,67 @@ class SyndicationController extends Controller
             'sourceAgency:id,name,slug',
             'targetAgency:id,name,slug',
         ]);
+
+        /*
+         * Notify the property-owning agency's active
+         * administrators when another agency selects
+         * one of its properties.
+         *
+         * Email preferences are handled by the
+         * PropertyImportedNotification class.
+         *
+         * This runs only for newly created syndications,
+         * not duplicate requests or reactivations.
+         */
+        $administrators = User::query()
+            ->where('agency_id', $syndication->source_agency_id)
+            ->where('role', 'agency_admin')
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($administrators as $administrator) {
+            try {
+                $administrator->notify(
+                    new PropertyImportedNotification($syndication)
+                );
+            } catch (\Throwable $exception) {
+                \Illuminate\Support\Facades\Log::error(
+                    'TPX property imported notification failed',
+                    [
+                        'syndication_id' => $syndication->id,
+                        'administrator_id' => $administrator->id,
+                        'error' => $exception->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        /*
+         * Notify the receiving agency's active administrators
+         * when a new syndication is created.
+         */
+        $receivingAdministrators = User::query()
+            ->where('agency_id', $syndication->target_agency_id)
+            ->where('role', 'agency_admin')
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($receivingAdministrators as $administrator) {
+            try {
+                $administrator->notify(
+                    new SyndicationCreatedNotification($syndication)
+                );
+            } catch (\Throwable $exception) {
+                \Illuminate\Support\Facades\Log::error(
+                    'TPX new syndication notification failed',
+                    [
+                        'syndication_id' => $syndication->id,
+                        'administrator_id' => $administrator->id,
+                        'error' => $exception->getMessage(),
+                    ]
+                );
+            }
+        }
 
         return response()->json([
             'status' => 'ok',

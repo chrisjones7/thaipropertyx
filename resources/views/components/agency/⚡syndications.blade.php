@@ -252,6 +252,34 @@ new class extends Component
         $syndication->status = 'removed';
         $syndication->save();
 
+/*
+ * Notify the receiving agency's active administrators
+ * when a syndicated property is removed from their website.
+ */
+$administrators = \App\Models\User::query()
+    ->where('agency_id', $syndication->target_agency_id)
+    ->where('role', 'agency_admin')
+    ->where('status', 'active')
+    ->get();
+
+foreach ($administrators as $administrator) {
+    try {
+        $administrator->notify(
+            new \App\Notifications\SyndicationRemovedNotification($syndication)
+        );
+    } catch (\Throwable $exception) {
+        \Illuminate\Support\Facades\Log::error(
+            'TPX syndication removal notification failed',
+            [
+                'syndication_id' => $syndication->id,
+                'administrator_id' => $administrator->id,
+                'error' => $exception->getMessage(),
+            ]
+        );
+    }
+}
+
+
         $this->successMessage =
             $syndication->property->title .
             ' has been removed from your website.';

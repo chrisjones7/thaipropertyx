@@ -15,6 +15,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use App\Notifications\PropertyUpdatedNotification;
+use App\Notifications\PropertyWithdrawnNotification;
+use Illuminate\Support\Facades\Log;
 
 class PropertySyncController extends Controller
 {
@@ -228,7 +232,8 @@ class PropertySyncController extends Controller
     (bool) ($property->exchange_available ?? false);
 
 $isExchangeAvailable =
-    (bool) $validated['exchange_available'];
+    (bool) $validated['exchange_available']
+    && $propertyStatus === 'active';
 
 /*
  * Normalize the source Houzez property type into the
@@ -455,7 +460,29 @@ $canonicalPropertyType =
             ) {
                 $property->published_at = now();
             }
+// Detect genuine changes to an existing property's core details.
+$changedFields = [];
 
+if (! $isNewProperty) {
+    $changedFields = array_keys(
+        $property->getDirty()
+    );
+
+    // Ignore internal timestamps and publication metadata.
+    $changedFields = array_values(array_diff(
+        $changedFields,
+        [
+    'updated_at',
+    'published_at',
+    'exchange_available_at',
+    'exchange_withdrawn_at',
+    'exchange_available',
+    'featured',
+    'listing_type',
+    'price',
+]
+    ));
+}
             $property->save();
 
             /*
@@ -621,7 +648,17 @@ $canonicalPropertyType =
                     }
                 }
             }
+// Remember receiving agencies before their syndications are revoked.
+$withdrawnTargetAgencyIds = [];
 
+if ($wasExchangeAvailable && ! $isExchangeAvailable) {
+    $withdrawnTargetAgencyIds = $property->syndications()
+        ->where('status', 'active')
+        ->pluck('target_agency_id')
+        ->unique()
+        ->values()
+        ->all();
+}
             /*
              * If the owner removes the property from the TPX Network,
              * centrally revoke every non-revoked syndication.
@@ -639,14 +676,75 @@ $canonicalPropertyType =
             }
 
             return [
-                'property' => $property->fresh([
-                    'images',
-                ]),
-                'created' => $isNewProperty,
-            ];
+    'property' => $property->fresh([
+        'images',
+    ]),
+    'created' => $isNewProperty,
+    'changed_fields' => $changedFields,
+'withdrawn_target_agency_ids' => $withdrawnTargetAgencyIds,
+];
         });
 
         $property = $result['property'];
+// Notify receiving agencies after a property is withdrawn.
+foreach ($result['withdrawn_target_agency_ids'] as $targetAgencyId) {
+    $administrators = User::query()
+        ->where('agency_id', $targetAgencyId)
+        ->where('role', 'agency_admin')
+        ->where('status', 'active')
+        ->get();
+
+    foreach ($administrators as $administrator) {
+        try {
+            $administrator->notify(
+                new PropertyWithdrawnNotification($property)
+            );
+        } catch (\Throwable $exception) {
+            Log::error('TPX property withdrawal notification failed', [
+                'property_id' => $property->id,
+                'administrator_id' => $administrator->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+}
+// Notify receiving agencies when a shared property is updated.
+if (
+    ! $result['created'] &&
+    ! empty($result['changed_fields']) &&
+    $property->status === 'active' &&
+    $property->exchange_available
+) {
+    $syndications = $property->syndications()
+        ->where('status', 'active')
+        ->get();
+
+    foreach ($syndications as $syndication) {
+        $administrators = User::query()
+            ->where('agency_id', $syndication->target_agency_id)
+            ->where('role', 'agency_admin')
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($administrators as $administrator) {
+            try {
+                $administrator->notify(
+                    new PropertyUpdatedNotification(
+                        $property,
+                        $result['changed_fields']
+                    )
+                );
+            } catch (\Throwable $exception) {
+                Log::error('TPX property update notification failed', [
+                    'property_id' => $property->id,
+                    'administrator_id' => $administrator->id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+    }
+}
+
 
         return response()->json([
             'status' => 'ok',

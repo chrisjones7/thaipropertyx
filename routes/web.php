@@ -130,3 +130,7 @@ Route::livewire('/connector-api', 'agency.connector-api')
     ->middleware('auth')
     ->name('agency.connector-api');
 
+
+Route::livewire('/join', 'membership.join')->name('membership.join');
+
+Route::livewire('/admin/membership-enquiries', 'admin.membership-enquiries')->middleware('auth')->name('admin.membership-enquiries');

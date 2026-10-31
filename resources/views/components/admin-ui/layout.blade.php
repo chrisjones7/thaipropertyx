@@ -38,7 +38,21 @@
                     Dashboard
                 </a>
 
-                <a
+                @if (auth()->user()->isPlatformAdmin())
+    @php($unreadEnquiries = \App\Models\MembershipEnquiry::unread()->count())
+
+    <a href="/admin/membership-enquiries"
+       class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->is('admin/membership-enquiries*') ? 'bg-slate-800 text-white' : ($unreadEnquiries > 0 ? 'bg-amber-400/10 text-amber-300' : 'text-slate-300 hover:bg-slate-900 hover:text-white') }}">
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5"/>
+        </svg>
+        <span class="flex-1">Membership Enquiries</span>
+        @if ($unreadEnquiries > 0)
+            <span class="rounded-full bg-amber-400 px-2 py-0.5 text-xs font-bold text-slate-950">{{ $unreadEnquiries }}</span>
+        @endif
+    </a>
+@endif
+<a
                     href="/admin/agencies"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl
                     {{ request()->is('admin/agencies*') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white' }}"

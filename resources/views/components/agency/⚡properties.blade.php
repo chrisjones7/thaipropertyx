@@ -395,6 +395,19 @@ if ($this->maxPrice !== '' && is_numeric($this->maxPrice)) {
 
 <div>
     <x-agency-ui.layout title="My Properties">
+<style>
+.tpx-property-card { container-type: inline-size; min-width: 0; max-width: 100%; }
+.tpx-property-grid { min-width: 0; }
+@container (max-width: 1000px) {
+    .tpx-property-grid { grid-template-columns: 144px minmax(0, 1fr) 130px 130px !important; align-items: center; }
+}
+@container (max-width: 650px) {
+    .tpx-property-grid { grid-template-columns: 144px minmax(0, 1fr) !important; }
+}
+@container (max-width: 420px) {
+    .tpx-property-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+</style>
         <div class="space-y-6">
 
             {{-- HEADER --}}
@@ -669,8 +682,8 @@ if ($this->maxPrice !== '' && is_numeric($this->maxPrice)) {
                             };
                         @endphp
 
-                        <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                            <div class="grid min-w-0 grid-cols-1 items-center gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[144px_minmax(200px,1fr)_130px_150px_120px_160px_100px]">
+                        <article class="tpx-property-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+                            <div class="tpx-property-grid grid items-center gap-4" style="grid-template-columns: 144px minmax(260px, 1fr) 140px 40px 120px 110px 90px;">
 
                                 {{-- FIXED IMAGE --}}
                                 <div class="h-28 w-36 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200"

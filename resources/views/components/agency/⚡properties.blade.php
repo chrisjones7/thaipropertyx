@@ -683,7 +683,7 @@ if ($this->maxPrice !== '' && is_numeric($this->maxPrice)) {
                         @endphp
 
                         <article class="tpx-property-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                            <div class="tpx-property-grid grid items-center gap-4" style="grid-template-columns: 144px minmax(260px, 1fr) 140px 40px 120px 110px 90px;">
+                            <div class="tpx-property-grid grid items-center gap-4" style="grid-template-columns: 144px minmax(200px, 1fr) 110px 145px 110px 120px 90px;">
 
                                 {{-- FIXED IMAGE --}}
                                 <div class="h-28 w-36 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200"

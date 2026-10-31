@@ -398,7 +398,7 @@ if ($this->maxPrice !== '' && is_numeric($this->maxPrice)) {
 <style>
 .tpx-property-card { container-type: inline-size; min-width: 0; max-width: 100%; }
 .tpx-property-grid { min-width: 0; }
-@container (max-width: 1000px) {
+@container (max-width: 900px) {
     .tpx-property-grid { grid-template-columns: 144px minmax(0, 1fr) 130px 130px !important; align-items: center; }
 }
 @container (max-width: 650px) {

@@ -243,9 +243,12 @@ public function updatedMaxPrice(): void
             ->where('agency_id', $agencyId)
             ->where('status', '!=', 'withdrawn')
             ->with([
-                'primaryImage',
-                'assignedUser',
-            ])
+    'primaryImage',
+    'assignedUser',
+    'duplicateMatches' => function ($query) {
+        $query->where('review_status', 'pending');
+    },
+])
             ->withCount([
                 'media',
                 'syndications',
@@ -711,6 +714,21 @@ if ($this->maxPrice !== '' && is_numeric($this->maxPrice)) {
                                             {{ ucwords(str_replace(['_', '-'], ' ', $property->property_type ?: 'Property')) }}
                                         </span>
                                     </div>
+
+                                    @if ($property->duplicateMatches->isNotEmpty())
+                                        <div class="mt-2">
+                                            <a
+                                                href="{{ route('agency.properties.edit', $property->id) }}"
+                                                class="inline-flex items-center gap-2 rounded-md bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100"
+                                                title="Review possible duplicate property listings"
+                                            >
+                                                <span aria-hidden="true">&#9888;</span>
+                                                Potential Duplicate
+                                                ({{ $property->duplicateMatches->count() }})
+                                                — Review Matches
+                                            </a>
+                                        </div>
+                                    @endif
 
                                     <p class="mt-1.5 text-sm text-slate-500">
                                         @if ($property->reference)

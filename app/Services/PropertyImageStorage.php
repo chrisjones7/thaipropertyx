@@ -13,15 +13,17 @@ use RuntimeException;
 
 class PropertyImageStorage
 {
-    private const DISK = 's3';
-
+    private function diskName(): string
+{
+    return app()->environment('production') ? 's3' : 'public';
+}
     /**
      * Upload an original image and an optimised thumbnail to R2.
      * Return the fields needed to create a PropertyMedia record.
      */
     public function upload(UploadedFile $image, int $propertyId): array
     {
-        $disk = Storage::disk(self::DISK);
+        $disk = Storage::disk($this->diskName());
 
         $directory = 'properties/' . $propertyId;
         $extension = strtolower(
@@ -83,10 +85,10 @@ class PropertyImageStorage
                 'url' => $disk->url($path),
                 'thumbnail_url' => $thumbnailUrl,
                 ...PropertyMedia::storageMetadata(
-                    self::DISK,
-                    $path,
-                    'image'
-                ),
+    $this->diskName(),
+    $path,
+    'image'
+),
             ];
         } catch (\Throwable $exception) {
             $disk->delete($path);

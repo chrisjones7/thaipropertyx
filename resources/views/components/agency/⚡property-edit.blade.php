@@ -4,6 +4,8 @@ use App\Models\Agency;
 use App\Models\Property;
 use App\Models\PropertyFeature;
 use App\Models\PropertyMedia;
+use App\Jobs\FingerprintPropertyImage;
+use App\Services\DuplicateDetectionService;
 use App\Models\PropertyLabel;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +21,7 @@ new class extends Component
     use WithFileUploads;
 
     public int $propertyId;
+    public array $duplicateWarnings = [];
     public ?int $agency_id = null;
     public ?int $assigned_user_id = null;
 
@@ -100,6 +103,9 @@ new class extends Component
         $property->load(['features', 'labels', 'media']);
 
         $this->propertyId = $property->id;
+        $this->duplicateWarnings = app(DuplicateDetectionService::class)
+    ->findDuplicates($property)
+    ->toArray();
         $this->agency_id = $property->agency_id;
         $this->assigned_user_id = $property->assigned_user_id;
 
@@ -787,6 +793,7 @@ new class extends Component
             ]);
 
             $newMediaIds[(int) $index] = $media->id;
+            FingerprintPropertyImage::dispatch($media->id)->afterCommit();
         }
 
 
@@ -1080,6 +1087,58 @@ new class extends Component
 
 
         <form wire:submit="save" class="space-y-6">
+{{-- DUPLICATE PROPERTY WARNINGS --}}
+@if (count($duplicateWarnings) > 0)
+    <div class="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5">
+        <h4 class="font-bold text-amber-900">
+            Potential Duplicate Property Detected
+        </h4>
+
+        <p class="mt-2 text-sm text-amber-800">
+            TPX has identified photographs that may appear in other
+            property listings. Please review these matches.
+            You can still save and publish this property.
+        </p>
+
+        <div class="mt-4 space-y-2">
+            @foreach ($duplicateWarnings as $duplicate)
+                <div class="rounded-xl border border-amber-200 bg-white p-3">
+                    <p class="text-sm font-semibold text-slate-800">
+                        Property ID: {{ $duplicate['property_id'] }}
+                    </p>
+
+                    <p class="mt-1 text-sm text-slate-600">
+                        Matching photographs:
+                        {{ $duplicate['matching_images'] }}
+                    </p>
+
+                    <p class="mt-1 text-sm text-amber-800">
+                        Classification:
+                        {{ str_replace('_', ' ', ucfirst($duplicate['classification'])) }}
+                    </p>
+@php
+    $matchingProperty = Property::find($duplicate['property_id']);
+
+    $canEditMatch = $matchingProperty
+        && (int) $matchingProperty->agency_id === (int) Auth::user()->agency_id;
+@endphp
+
+@if ($canEditMatch)
+    <a
+        href="{{ route('agency.properties.edit', $matchingProperty->id) }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-amber-800 underline hover:text-amber-950"
+    >
+        View Matching Property: {{ $matchingProperty->title }}
+        <span aria-hidden="true">&nearr;</span>
+    </a>
+@endif
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
 
             @if ($errors->any())
                 <div class="rounded-2xl border-2 border-red-300 bg-red-50 px-5 py-4 shadow-sm">

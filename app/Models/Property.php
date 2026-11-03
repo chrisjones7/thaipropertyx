@@ -166,4 +166,15 @@ class Property extends Model
     {
         return $this->hasMany(Syndication::class);
     }
+
+    /**
+     * Potential duplicate listings detected for this property.
+     */
+    public function duplicateMatches(): HasMany
+    {
+        return $this->hasMany(
+            PropertyDuplicateMatch::class,
+            'property_id'
+        );
+    }
 }

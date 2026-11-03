@@ -24,6 +24,8 @@ class PropertyMedia extends Model
         'alt_text',
         'sort_order',
         'is_primary',
+        'image_sha256',
+        'image_phash',
     ];
 
     protected function casts(): array

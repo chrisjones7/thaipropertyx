@@ -4,6 +4,7 @@ use App\Models\Agency;
 use App\Models\Property;
 use App\Models\PropertyFeature;
 use App\Models\PropertyMedia;
+use App\Jobs\FingerprintPropertyImage;
 use App\Models\PropertyLabel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -699,7 +700,7 @@ new class extends Component
                 |--------------------------------------------------------------------------
                 */
 
-                PropertyMedia::create([
+                $media = PropertyMedia::create([
                     'property_id' => $property->id,
                     'media_type' => 'image',
                     'url' => '/storage/' . $path,
@@ -714,6 +715,7 @@ new class extends Component
                     'sort_order' => $index,
                     'is_primary' => $index === $primaryIndex,
                 ]);
+FingerprintPropertyImage::dispatch($media->id)->afterCommit();
             }
         }
 

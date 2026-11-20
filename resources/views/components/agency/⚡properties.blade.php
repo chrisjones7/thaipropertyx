@@ -401,14 +401,28 @@ if ($this->maxPrice !== '' && is_numeric($this->maxPrice)) {
 <style>
 .tpx-property-card { container-type: inline-size; min-width: 0; max-width: 100%; }
 .tpx-property-grid { min-width: 0; }
-@container (max-width: 940px) {
-    .tpx-property-grid { grid-template-columns: 144px minmax(0, 1fr) 130px 130px !important; align-items: center; }
+.tpx-property-grid > * { min-width: 0; }
+
+@container (max-width: 1100px) {
+    .tpx-property-grid {
+        grid-template-columns: 144px minmax(0, 1fr) minmax(120px, auto) !important;
+        align-items: start;
+    }
+    .tpx-property-grid > :nth-child(2) { grid-column: 2 / 4; }
 }
+
 @container (max-width: 650px) {
-    .tpx-property-grid { grid-template-columns: 144px minmax(0, 1fr) !important; }
+    .tpx-property-grid {
+        grid-template-columns: 144px minmax(0, 1fr) !important;
+    }
+    .tpx-property-grid > :nth-child(2) { grid-column: 2; }
 }
+
 @container (max-width: 420px) {
-    .tpx-property-grid { grid-template-columns: minmax(0, 1fr) !important; }
+    .tpx-property-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+    .tpx-property-grid > :nth-child(2) { grid-column: auto; }
 }
 </style>
         <div class="space-y-6">
@@ -686,7 +700,7 @@ if ($this->maxPrice !== '' && is_numeric($this->maxPrice)) {
                         @endphp
 
                         <article class="tpx-property-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                            <div class="tpx-property-grid grid items-center gap-4" style="grid-template-columns: 144px minmax(200px, 1fr) 110px 145px 110px 120px 90px;">
+                            <div class="tpx-property-grid grid items-center gap-4" style="grid-template-columns: 144px minmax(260px, 2fr) minmax(90px, .7fr) minmax(125px, .9fr) minmax(95px, .7fr) minmax(110px, .8fr) 85px;">
 
                                 {{-- FIXED IMAGE --}}
                                 <div class="h-28 w-36 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200"
@@ -709,7 +723,7 @@ if ($this->maxPrice !== '' && is_numeric($this->maxPrice)) {
                                 {{-- PROPERTY INFO --}}
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h5 class="truncate text-base font-bold text-slate-900">{{ $property->title }}</h5>
+                                        <h5 class="text-base font-bold leading-snug text-slate-900 break-words">{{ $property->title }}</h5>
                                         <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
                                             {{ ucwords(str_replace(['_', '-'], ' ', $property->property_type ?: 'Property')) }}
                                         </span>

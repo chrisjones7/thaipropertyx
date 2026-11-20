@@ -405,24 +405,28 @@ if ($this->maxPrice !== '' && is_numeric($this->maxPrice)) {
 
 @container (max-width: 1100px) {
     .tpx-property-grid {
-        grid-template-columns: 144px minmax(0, 1fr) minmax(120px, auto) !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 16px !important;
         align-items: start;
     }
-    .tpx-property-grid > :nth-child(2) { grid-column: 2 / 4; }
-}
-
-@container (max-width: 650px) {
-    .tpx-property-grid {
-        grid-template-columns: 144px minmax(0, 1fr) !important;
+    .tpx-property-grid > :nth-child(1) {
+        grid-column: 1;
     }
-    .tpx-property-grid > :nth-child(2) { grid-column: 2; }
+    .tpx-property-grid > :nth-child(2) {
+        grid-column: 2;
+    }
+    .tpx-property-grid > :nth-child(n+3) {
+        grid-column: auto;
+    }
 }
 
 @container (max-width: 420px) {
     .tpx-property-grid {
         grid-template-columns: minmax(0, 1fr) !important;
     }
-    .tpx-property-grid > :nth-child(2) { grid-column: auto; }
+    .tpx-property-grid > * {
+        grid-column: 1 !important;
+    }
 }
 </style>
         <div class="space-y-6">

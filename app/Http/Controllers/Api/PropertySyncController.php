@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ImportPropertyImage;
 
 use App\Models\Property;
 use App\Models\PropertyFeature;
@@ -594,61 +595,85 @@ if (! $isNewProperty) {
              * image gallery is removed.
              */
             if (array_key_exists('images', $validated)) {
-                $property->media()
+                // Preserve imported TPX files by matching their original source URLs.
+                $existingImages = $property->media()
                     ->where('media_type', 'image')
-                    ->delete();
+                    ->orderBy('id')
+                    ->get();
 
+                $matchedIds = [];
                 $primaryAssigned = false;
+                $firstImage = null;
 
                 foreach ($validated['images'] as $index => $image) {
-                    $requestedPrimary =
-                        (bool) ($image['is_primary'] ?? false);
+                    $sourceUrl = $image['url'];
 
-                    $isPrimary = false;
+                    $media = $existingImages->first(function ($existing) use (
+                        $sourceUrl,
+                        $matchedIds
+                    ) {
+                        if (in_array($existing->id, $matchedIds, true)) {
+                            return false;
+                        }
 
-                    if ($requestedPrimary && !$primaryAssigned) {
-                        $isPrimary = true;
+                        return ($existing->source_url ?: $existing->url) === $sourceUrl;
+                    });
+
+                    if (!$media) {
+                        $media = new PropertyMedia([
+                            'property_id' => $property->id,
+                            'media_type' => 'image',
+                            'url' => $sourceUrl,
+                            'source_url' => $sourceUrl,
+                            'thumbnail_url' => $image['thumbnail_url'] ?? null,
+                        ]);
+                    } else {
+                        // Existing hosted URLs and storage metadata remain intact.
+                        $media->source_url = $sourceUrl;
+                    }
+
+                    $requestedPrimary = (bool) ($image['is_primary'] ?? false);
+                    $isPrimary = $requestedPrimary && !$primaryAssigned;
+
+                    if ($isPrimary) {
                         $primaryAssigned = true;
                     }
 
-                    PropertyMedia::create([
-                        'property_id' => $property->id,
-                        'media_type' => 'image',
-                        'url' => $image['url'],
-                        'thumbnail_url' =>
-                            $image['thumbnail_url'] ?? null,
-                        'title' =>
-                            $image['title'] ?? null,
-                        'alt_text' =>
-                            $image['alt_text'] ?? null,
-                        'sort_order' =>
-                            $image['sort_order'] ?? $index,
-                        'is_primary' =>
-                            $isPrimary,
-                    ]);
-                }
+                    $media->title = $image['title'] ?? null;
+                    $media->alt_text = $image['alt_text'] ?? null;
+                    $media->sort_order = $image['sort_order'] ?? $index;
+                    $media->is_primary = $isPrimary;
+                    $media->save();
 
-                /*
-                 * If the connector supplied images but did not explicitly
-                 * mark a primary image, make the first image primary.
-                 */
-                if (
-                    count($validated['images']) > 0 &&
-                    !$primaryAssigned
-                ) {
-                    $firstImage = $property->media()
-                        ->where('media_type', 'image')
-                        ->orderBy('sort_order')
-                        ->orderBy('id')
-                        ->first();
+                    $matchedIds[] = $media->id;
 
-                    if ($firstImage) {
-                        $firstImage->is_primary = true;
-                        $firstImage->save();
+                    if ($firstImage === null) {
+                        $firstImage = $media;
+                    }
+
+                    if (!$media->storage_disk || !$media->storage_path) {
+                        ImportPropertyImage::dispatch(
+                            (int) $media->id,
+                            (int) $property->id,
+                            $sourceUrl
+                        )->afterCommit();
                     }
                 }
+
+                // Remove gallery records no longer present in the owner's feed.
+                // Storage-file garbage collection will be implemented separately.
+                foreach ($existingImages as $existingImage) {
+                    if (!in_array($existingImage->id, $matchedIds, true)) {
+                        $existingImage->delete();
+                    }
+                }
+
+                if (!$primaryAssigned && $firstImage !== null) {
+                    $firstImage->is_primary = true;
+                    $firstImage->save();
+                }
             }
-// Remember receiving agencies before their syndications are revoked.
+            // Remember receiving agencies before their syndications are revoked.
 $withdrawnTargetAgencyIds = [];
 
 if ($wasExchangeAvailable && ! $isExchangeAvailable) {
@@ -809,4 +834,3 @@ if (
         return $slug;
     }
 }
-

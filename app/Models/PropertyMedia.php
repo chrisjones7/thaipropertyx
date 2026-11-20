@@ -15,6 +15,7 @@ class PropertyMedia extends Model
         'storage_disk',
         'storage_path',
         'url',
+        'source_url',
         'thumbnail_url',
         'file_size',
         'mime_type',

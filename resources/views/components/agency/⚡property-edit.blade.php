@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Models\Agency;
 use App\Models\Property;
@@ -1318,12 +1318,33 @@ new class extends Component
                             Description
                         </label>
 
-                        <textarea
-                            wire:model="description"
-                            rows="6"
-                            placeholder="Describe the property..."
-                            class="w-full resize-y rounded-xl border border-slate-300 px-4 py-3 text-sm"
-                        ></textarea>
+                        <div wire:ignore>
+    <input id="property-description-input" type="hidden">
+    <trix-editor
+        input="property-description-input"
+        class="w-full rounded-xl border border-slate-300 bg-white"
+        placeholder="Describe the property..."
+    ></trix-editor>
+</div>
+
+@script
+<script>
+    const editor = $wire.$el.querySelector('trix-editor');
+    if (editor) {
+        editor.addEventListener('trix-initialize', () => {
+            editor.editor.loadHTML($wire.description || '');
+        }, { once: true });
+
+        if (editor.editor) {
+            editor.editor.loadHTML($wire.description || '');
+        }
+
+        editor.addEventListener('trix-change', () => {
+            $wire.set('description', editor.value, false);
+        });
+    }
+</script>
+@endscript
                     </div>
 
                 </div>
@@ -3003,4 +3024,6 @@ new class extends Component
 
     })();
 </script>
+
+
 

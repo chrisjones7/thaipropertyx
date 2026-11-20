@@ -323,7 +323,7 @@ $canonicalPropertyType =
                     $validated['reference'] ?? null,
 
                 'title' =>
-                    $validated['title'],
+                    html_entity_decode($validated['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8'),
 
                 'description' =>
                     $validated['description'] ?? null,
